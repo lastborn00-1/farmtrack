@@ -2,8 +2,9 @@ import { useState } from 'react';
 import { useInventory } from '@/features/inventory/hooks/useInventory';
 import { useBatches } from '@/features/farm/hooks/useBatches';
 import { useEggProduction } from '@/features/production/hooks/useEggProduction';
-import { Plus, Wheat, TrendingDown, Calendar, AlertTriangle, ArrowUpFromLine, Trash2, Edit2, Scale } from 'lucide-react';
+import { Plus, Wheat, TrendingDown, Calendar, AlertTriangle, ArrowUpFromLine, Trash2, Edit2, Scale, Beaker } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { LocalFeedCalculator } from '@/features/feed/components/LocalFeedCalculator';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
 
@@ -31,7 +32,7 @@ export default function FeedManagementPage() {
     })
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
-  const [activeTab, setActiveTab] = useState<'inventory' | 'fcr'>('inventory');
+  const [activeTab, setActiveTab] = useState<'inventory' | 'fcr' | 'production'>('inventory');
   const [isLogOpen, setIsLogOpen] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [editingLogId, setEditingLogId] = useState<string | null>(null);
@@ -171,10 +172,10 @@ export default function FeedManagementPage() {
       </div>
 
       {/* Tabs */}
-      <div className="flex bg-muted/50 p-1.5 rounded-2xl">
+      <div className="flex bg-muted/50 p-1.5 rounded-2xl overflow-x-auto scrollbar-hide hide-scrollbar">
         <button
           onClick={() => setActiveTab('inventory')}
-          className={`flex-1 flex items-center justify-center gap-2 py-3 text-sm font-bold rounded-xl transition-all ${
+          className={`flex-1 min-w-max flex items-center justify-center gap-2 py-3 px-3 text-sm font-bold rounded-xl transition-all ${
             activeTab === 'inventory' 
               ? 'bg-background shadow-md text-foreground border border-border scale-[0.98]' 
               : 'text-muted-foreground hover:text-foreground'
@@ -184,13 +185,23 @@ export default function FeedManagementPage() {
         </button>
         <button
           onClick={() => setActiveTab('fcr')}
-          className={`flex-1 flex items-center justify-center gap-2 py-3 text-sm font-bold rounded-xl transition-all ${
+          className={`flex-1 min-w-max flex items-center justify-center gap-2 py-3 px-3 text-sm font-bold rounded-xl transition-all ${
             activeTab === 'fcr' 
               ? 'bg-background shadow-md text-foreground border border-border scale-[0.98]' 
               : 'text-muted-foreground hover:text-foreground'
           }`}
         >
           <Scale className="w-4 h-4" /> Performance (FCR)
+        </button>
+        <button
+          onClick={() => setActiveTab('production')}
+          className={`flex-1 min-w-max flex items-center justify-center gap-2 py-3 px-3 text-sm font-bold rounded-xl transition-all ${
+            activeTab === 'production' 
+              ? 'bg-background shadow-md text-foreground border border-border scale-[0.98]' 
+              : 'text-muted-foreground hover:text-foreground'
+          }`}
+        >
+          <Beaker className="w-4 h-4" /> Local Production
         </button>
       </div>
 
@@ -360,6 +371,10 @@ export default function FeedManagementPage() {
             )}
           </div>
         </div>
+      )}
+
+      {activeTab === 'production' && (
+        <LocalFeedCalculator />
       )}
 
       {/* FAB */}
