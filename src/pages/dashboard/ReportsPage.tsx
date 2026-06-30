@@ -179,13 +179,27 @@ export default function ReportsPage() {
 
       {/* Monthly Finance Chart */}
       <div className="premium-card border border-border rounded-2xl p-4">
-        <p className="text-sm font-bold text-foreground mb-4">💰 Income vs Expense — This Month</p>
+        <p className="text-sm font-bold text-foreground mb-1">💰 Income vs Expense — This Month</p>
+        <div className="flex gap-4 mb-4">
+          <span className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground">
+            <span className="w-3 h-3 rounded-sm inline-block" style={{background:'hsl(152,60%,35%)'}} /> Income
+          </span>
+          <span className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground">
+            <span className="w-3 h-3 rounded-sm inline-block" style={{background:'hsl(0,84%,60%)'}} /> Expense
+          </span>
+        </div>
         {monthFinance.some(d => d.income > 0 || d.expense > 0) ? (
-          <ResponsiveContainer width="100%" height={160}>
-            <BarChart data={monthFinance} margin={{ top: 4, right: 4, left: -32, bottom: 0 }}>
+          <ResponsiveContainer width="100%" height={280}>
+            <BarChart data={monthFinance} margin={{ top: 4, right: 4, left: 0, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
-              <XAxis dataKey="day" tick={{ fontSize: 9, fill: 'hsl(var(--muted-foreground))' }} axisLine={false} tickLine={false} interval={4} />
-              <YAxis tick={{ fontSize: 9, fill: 'hsl(var(--muted-foreground))' }} axisLine={false} tickLine={false} />
+              <XAxis dataKey="day" tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }} axisLine={false} tickLine={false} interval={3} />
+              <YAxis
+                tick={{ fontSize: 9, fill: 'hsl(var(--muted-foreground))' }}
+                axisLine={false}
+                tickLine={false}
+                tickFormatter={(v) => v >= 1000 ? `${(v / 1000).toFixed(0)}k` : String(v)}
+                width={36}
+              />
               <Tooltip
                 contentStyle={{
                   background: 'hsl(var(--card))',
@@ -194,9 +208,11 @@ export default function ReportsPage() {
                   fontSize: '12px',
                   fontWeight: 600,
                 }}
+                formatter={(value: any) => [`₦${Number(value).toLocaleString()}`, '']}
               />
-              <Bar dataKey="income" fill="hsl(152,60%,35%)" radius={[4, 4, 0, 0]} name="Income" />
-              <Bar dataKey="expense" fill="hsl(0,84%,60%)" radius={[4, 4, 0, 0]} name="Expense" />
+              <Bar dataKey="income" fill="hsl(152,60%,35%)" radius={[4, 4, 0, 0]} name="Income" maxBarSize={18} />
+              <Bar dataKey="expense" fill="hsl(0,84%,60%)" radius={[4, 4, 0, 0]} name="Expense" maxBarSize={18} />
+
             </BarChart>
           </ResponsiveContainer>
         ) : (

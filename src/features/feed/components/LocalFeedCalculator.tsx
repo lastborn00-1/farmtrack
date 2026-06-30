@@ -7,6 +7,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Plus, Trash2, Save, Calculator, Beaker } from 'lucide-react';
 import { useInventory } from '@/features/inventory/hooks/useInventory';
+import { useFinance } from '@/features/finance/hooks/useFinance';
+import { toast } from 'sonner';
 
 // Standard Recipes (Per 1000kg)
 const STANDARD_RECIPES = {
@@ -51,10 +53,25 @@ const STANDARD_RECIPES = {
     { name: 'Lysine', quantityKg: 1, totalPrice: 0 },
     { name: 'Toxin Binder', quantityKg: 1, totalPrice: 0 },
   ],
+  'Pre-Layer Mash': [
+    { name: 'Maize', quantityKg: 480, totalPrice: 0 },
+    { name: 'Soybean Meal', quantityKg: 120, totalPrice: 0 },
+    { name: 'Groundnut Cake (GNC)', quantityKg: 100, totalPrice: 0 },
+    { name: 'Wheat Offal', quantityKg: 200, totalPrice: 0 },
+    { name: 'Palm Kernel Cake (PKC)', quantityKg: 30, totalPrice: 0 },
+    { name: 'Bone Meal', quantityKg: 30, totalPrice: 0 },
+    { name: 'Limestone', quantityKg: 30, totalPrice: 0 },
+    { name: 'Premix', quantityKg: 2.5, totalPrice: 0 },
+    { name: 'Salt', quantityKg: 2.5, totalPrice: 0 },
+    { name: 'Methionine', quantityKg: 1.5, totalPrice: 0 },
+    { name: 'Lysine', quantityKg: 1, totalPrice: 0 },
+    { name: 'Toxin Binder', quantityKg: 1, totalPrice: 0 },
+  ],
 };
 
 export function LocalFeedCalculator() {
   const { items, logTransaction, isSubmitting } = useInventory();
+  const { addTransaction } = useFinance();
   const feedItems = items.filter(i => i.category === 'Feed');
   
   const { register, control, handleSubmit, watch, setValue, formState: { errors } } = useForm<FeedProductionLog>({
@@ -138,12 +155,28 @@ export function LocalFeedCalculator() {
         log: cleanLog as any,
         newQuantity: selectedItem.currentQuantity + data.bagsProduced
       });
-      
+
+      // Auto-log as Feed Cost expense in Finance
+      if (data.totalCost > 0) {
+        const financePayload = {
+          type: 'EXPENSE' as const,
+          category: 'Feed Cost' as const,
+          amount: data.totalCost,
+          date: data.date,
+          description: `Local production: ${data.bagsProduced} bags (${data.targetBagSizeKg}kg) of ${data.recipeName}. Cost/bag: ₦${data.costPerBag.toLocaleString()}`,
+          paymentMethod: 'Cash' as const,
+          status: 'Paid' as const,
+        };
+        await addTransaction(financePayload);
+      }
+
       // Reset inventory selection
       setValue('inventoryItemId', '');
+      toast.success(`${data.bagsProduced} bags added to inventory & cost logged in Finance!`);
       
     } catch (e) {
       console.error('Failed to save to inventory', e);
+      toast.error('Failed to save. Please try again.');
     }
   };
 
