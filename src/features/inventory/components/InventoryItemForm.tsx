@@ -6,15 +6,21 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 
+import { z } from 'zod';
+
 interface InventoryItemFormProps {
   onSubmit: (data: InventoryItem & { totalCost?: number }) => void;
   isLoading?: boolean;
   initialData?: InventoryItem;
 }
 
+const formSchema = inventoryItemSchema.extend({
+  totalCost: z.coerce.number().optional()
+});
+
 export function InventoryItemForm({ onSubmit, isLoading, initialData }: InventoryItemFormProps) {
   const { register, handleSubmit, watch, formState: { errors } } = useForm<any>({
-    resolver: zodResolver(inventoryItemSchema),
+    resolver: zodResolver(formSchema),
     defaultValues: initialData || {
       category: 'Feed',
       unit: 'Kg',
