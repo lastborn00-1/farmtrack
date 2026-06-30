@@ -314,8 +314,9 @@ export default function FeedManagementPage() {
               const fcr = lifetimeEggs > 0 ? Math.round((lifetimeFeedKg * 1000) / lifetimeEggs) : 0;
               
               const ageInDays = batch.arrivalDate ? Math.floor((new Date().getTime() - new Date(batch.arrivalDate).getTime()) / (1000 * 3600 * 24)) : 0;
-              const dailyFeedIntakePerBird = (ageInDays > 0 && batch.currentQuantity > 0) 
-                ? Math.round((lifetimeFeedKg * 1000) / (batch.currentQuantity * ageInDays)) 
+              const daysToDivide = Math.max(1, ageInDays);
+              const dailyFeedIntakePerBird = (batch.currentQuantity > 0) 
+                ? Math.round((lifetimeFeedKg * 1000) / (batch.currentQuantity * daysToDivide)) 
                 : 0;
 
               return (
