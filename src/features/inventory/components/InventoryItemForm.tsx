@@ -7,13 +7,13 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 
 interface InventoryItemFormProps {
-  onSubmit: (data: InventoryItem) => void;
+  onSubmit: (data: InventoryItem & { totalCost?: number }) => void;
   isLoading?: boolean;
   initialData?: InventoryItem;
 }
 
 export function InventoryItemForm({ onSubmit, isLoading, initialData }: InventoryItemFormProps) {
-  const { register, handleSubmit, formState: { errors } } = useForm<any>({
+  const { register, handleSubmit, watch, formState: { errors } } = useForm<any>({
     resolver: zodResolver(inventoryItemSchema),
     defaultValues: initialData || {
       category: 'Feed',
@@ -22,6 +22,9 @@ export function InventoryItemForm({ onSubmit, isLoading, initialData }: Inventor
       reorderLevel: 50,
     }
   });
+
+  const isEditing = !!initialData;
+  const category = watch('category');
 
   return (
     <form onSubmit={handleSubmit((data) => onSubmit(data))} className="space-y-4">
@@ -77,8 +80,29 @@ export function InventoryItemForm({ onSubmit, isLoading, initialData }: Inventor
         </div>
       </div>
 
+      {/* Cost field — only show when adding new item with initial quantity > 0, or always for new items */}
+      {!isEditing && (
+        <div className="space-y-2 p-3 rounded-xl bg-emerald-50/60 dark:bg-emerald-900/10 border border-emerald-100 dark:border-emerald-900/30">
+          <Label htmlFor="totalCost" className="text-emerald-800 dark:text-emerald-300">
+            Total Cost (₦) <span className="text-muted-foreground font-normal text-xs">(Optional)</span>
+          </Label>
+          <Input
+            id="totalCost"
+            type="number"
+            step="0.01"
+            min="0"
+            placeholder="e.g. 45000"
+            {...register('totalCost', { valueAsNumber: true })}
+            className="border-emerald-200 dark:border-emerald-900/40 focus-visible:ring-emerald-500"
+          />
+          <p className="text-[10px] text-emerald-700 dark:text-emerald-400">
+            💡 If entered, will be recorded as a <strong>{category}</strong> expense in Finance & Reports.
+          </p>
+        </div>
+      )}
+
       <Button type="submit" className="w-full" disabled={isLoading}>
-        {isLoading ? 'Saving...' : 'Add Item'}
+        {isLoading ? 'Saving...' : isEditing ? 'Save Changes' : 'Add Item'}
       </Button>
     </form>
   );

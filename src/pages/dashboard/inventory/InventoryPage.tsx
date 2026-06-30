@@ -28,14 +28,36 @@ export default function InventoryPage() {
   const handleAddItem = async (data: any) => {
     try {
       if (editingItem) {
+        // Editing: just update, no cost logging
         await updateItem({ id: editingItem.id!, ...data });
         setEditingItem(null);
+        toast.success('Item updated!');
       } else {
-        await addItem(data);
+        // Adding new: strip totalCost before saving to inventory
+        const { totalCost, ...itemData } = data;
+        await addItem(itemData);
         setIsAddItemOpen(false);
+
+        // Auto-log Finance expense if cost was provided
+        if (totalCost && Number(totalCost) > 0) {
+          const financeCategory = CATEGORY_TO_FINANCE[data.category] || 'Other';
+          await addTransaction({
+            type: 'EXPENSE',
+            category: financeCategory as any,
+            amount: Number(totalCost),
+            date: new Date().toISOString().split('T')[0],
+            description: `New stock: ${data.currentQuantity} ${data.unit} of ${data.name}`,
+            paymentMethod: 'Cash',
+            status: 'Paid',
+          });
+          toast.success(`Item added & ₦${Number(totalCost).toLocaleString()} logged as ${financeCategory} expense!`);
+        } else {
+          toast.success('Item added to inventory!');
+        }
       }
     } catch (e) {
       console.error(e);
+      toast.error('Failed to save. Please try again.');
     }
   };
 
