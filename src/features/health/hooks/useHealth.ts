@@ -1,7 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuthStore } from '@/store/authStore';
 import type { TreatmentRecord, VaccinationSchedule } from '@/schemas/healthSchemas';
-import { getFarmDocuments, addFarmDocument, updateFarmDocument } from '@/lib/firestore';
+import { getFarmDocuments, addFarmDocument, updateFarmDocument, getFarmDocument, deleteFarmDocument } from '@/lib/firestore';
+import type { InventoryItem, InventoryLog } from '@/schemas/inventorySchemas';
 
 export function useHealth() {
   const { activeFarm } = useAuthStore();
@@ -38,11 +39,62 @@ export function useHealth() {
   const addTreatmentMutation = useMutation({
     mutationFn: async (data: Omit<TreatmentRecord, 'id'>) => {
       if (!activeFarm?.farmId) throw new Error('No active farm');
-      return await addFarmDocument(activeFarm.farmId, 'treatments', data);
+      const treatmentId = await addFarmDocument(activeFarm.farmId, 'treatments', data);
+
+      if (data.inventoryItemId && data.inventoryQuantityUsed) {
+        try {
+          const item = await getFarmDocument<InventoryItem>(activeFarm.farmId, 'inventory', data.inventoryItemId);
+          if (item) {
+            const newQuantity = Math.max(0, item.currentQuantity - data.inventoryQuantityUsed);
+            await updateFarmDocument(activeFarm.farmId, 'inventory', data.inventoryItemId, {
+              currentQuantity: newQuantity
+            });
+            const log: Omit<InventoryLog, 'id'> = {
+              itemId: item.id!,
+              itemName: item.name,
+              date: data.date,
+              type: 'OUT',
+              quantity: data.inventoryQuantityUsed,
+              notes: `Treatment: ${data.diagnosis}`,
+            };
+            await addFarmDocument(activeFarm.farmId, 'inventoryLogs', log);
+          }
+        } catch (err) {
+          console.error("Failed to deduct inventory for treatment", err);
+        }
+      }
+
+      return treatmentId;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['treatments', activeFarm?.farmId] });
+      queryClient.invalidateQueries({ queryKey: ['inventory', activeFarm?.farmId] });
+      queryClient.invalidateQueries({ queryKey: ['inventoryLogs', activeFarm?.farmId] });
     },
+  });
+
+  const deleteTreatmentMutation = useMutation({
+    mutationFn: async (id: string) => {
+      if (!activeFarm?.farmId) throw new Error('No active farm');
+      return await deleteFarmDocument(activeFarm.farmId, 'treatments', id);
+    },
+    onMutate: async (id) => {
+      const queryKey = ['treatments', activeFarm?.farmId];
+      await queryClient.cancelQueries({ queryKey });
+      const previousTreatments = queryClient.getQueryData(queryKey);
+      queryClient.setQueryData(queryKey, (old: any) => 
+        old ? old.filter((t: any) => t.id !== id) : old
+      );
+      return { previousTreatments, queryKey };
+    },
+    onError: (_error: any, _variables: any, context: any) => {
+      if (context?.previousTreatments) {
+        queryClient.setQueryData(context.queryKey, context.previousTreatments);
+      }
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['treatments', activeFarm?.farmId] });
+    }
   });
 
   const updateTreatmentMutation = useMutation({
@@ -115,8 +167,9 @@ export function useHealth() {
     isLoading: treatmentsQuery.isLoading || vaccinesQuery.isLoading,
     addTreatment: addTreatmentMutation.mutateAsync,
     updateTreatment: updateTreatmentMutation.mutateAsync,
+    deleteTreatment: deleteTreatmentMutation.mutateAsync,
     addVaccine: addVaccineMutation.mutateAsync,
     updateVaccine: updateVaccineMutation.mutateAsync,
-    isSubmitting: addTreatmentMutation.isPending || updateTreatmentMutation.isPending || addVaccineMutation.isPending || updateVaccineMutation.isPending,
+    isSubmitting: addTreatmentMutation.isPending || updateTreatmentMutation.isPending || deleteTreatmentMutation.isPending || addVaccineMutation.isPending || updateVaccineMutation.isPending,
   };
 }

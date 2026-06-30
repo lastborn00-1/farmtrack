@@ -12,6 +12,7 @@ import { AiService } from '@/features/ai/services/aiService';
 import { Camera, Sparkles, Loader2, ImageIcon } from 'lucide-react';
 import { toast } from 'sonner';
 import { normalizeImageForAi } from '@/lib/image';
+import { useInventory } from '@/features/inventory/hooks/useInventory';
 
 interface TreatmentFormProps {
   batches: Batch[];
@@ -21,6 +22,8 @@ interface TreatmentFormProps {
 }
 
 export function TreatmentForm({ batches, onSubmit, isLoading, initialData }: TreatmentFormProps) {
+  const { items: inventoryItems } = useInventory();
+  const medications = inventoryItems.filter(i => i.category === 'Medication');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const { register, handleSubmit, watch, setValue, formState: { errors } } = useForm<any>({
     resolver: zodResolver(treatmentRecordSchema),
@@ -55,6 +58,16 @@ export function TreatmentForm({ batches, onSubmit, isLoading, initialData }: Tre
 
   const activeBatches = batches.filter(b => ['LAYING','GROWING','BROODING'].includes(b.status));
   const selectedBatchId = watch('batchId');
+  const selectedInventoryItemId = watch('inventoryItemId');
+
+  useEffect(() => {
+    if (selectedInventoryItemId) {
+      const item = medications.find(m => m.id === selectedInventoryItemId);
+      if (item) {
+        setValue('medicationUsed', item.name, { shouldValidate: true });
+      }
+    }
+  }, [selectedInventoryItemId, medications, setValue]);
 
   useEffect(() => {
     const batch = batches.find(b => b.id === selectedBatchId);
@@ -166,6 +179,30 @@ export function TreatmentForm({ batches, onSubmit, isLoading, initialData }: Tre
           <Label htmlFor="medicationUsed">Medicine / Product</Label>
           <Input id="medicationUsed" placeholder="e.g. Amprolium, Vitalyte" {...register('medicationUsed')} />
           {errors.medicationUsed && <p className="text-xs text-red-500">{String(errors.medicationUsed.message)}</p>}
+        </div>
+      </div>
+
+      <div className="p-4 bg-muted/40 rounded-xl space-y-4 border border-border">
+        <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Inventory Link (Optional)</p>
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="inventoryItemId">Select from Inventory</Label>
+            <select
+              id="inventoryItemId"
+              {...register('inventoryItemId')}
+              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+            >
+              <option value="">-- None --</option>
+              {medications.map(m => (
+                <option key={m.id} value={m.id}>{m.name} ({m.currentQuantity} {m.unit})</option>
+              ))}
+            </select>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="inventoryQuantityUsed">Quantity Used</Label>
+            <Input id="inventoryQuantityUsed" type="number" step="0.01" placeholder="e.g. 1" {...register('inventoryQuantityUsed')} />
+            {errors.inventoryQuantityUsed && <p className="text-xs text-red-500">{String(errors.inventoryQuantityUsed.message)}</p>}
+          </div>
         </div>
       </div>
 

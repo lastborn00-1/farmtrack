@@ -3,7 +3,7 @@ import type { Transaction } from '@/schemas/financeSchemas';
 import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
-import { Download, Edit, CheckCircle2 } from 'lucide-react';
+import { Download, Edit, CheckCircle2, Trash } from 'lucide-react';
 import html2canvas from 'html2canvas';
 
 interface ReceiptViewerProps {
@@ -12,9 +12,10 @@ interface ReceiptViewerProps {
   transaction: Transaction | null;
   farmName: string;
   onEdit?: () => void;
+  onDelete?: () => void;
 }
 
-export function ReceiptViewer({ isOpen, onClose, transaction, farmName, onEdit }: ReceiptViewerProps) {
+export function ReceiptViewer({ isOpen, onClose, transaction, farmName, onEdit, onDelete }: ReceiptViewerProps) {
   const receiptRef = useRef<HTMLDivElement>(null);
   const [isDownloading, setIsDownloading] = useState(false);
 
@@ -182,6 +183,17 @@ export function ReceiptViewer({ isOpen, onClose, transaction, farmName, onEdit }
             >
               <Edit className="w-4 h-4 mr-2" />
               Edit
+            </Button>
+          )}
+
+          {onDelete && (
+            <Button 
+              variant="destructive"
+              className="shadow-lg rounded-xl flex-shrink-0"
+              onClick={onDelete}
+            >
+              <Trash className="w-4 h-4 mr-2" />
+              Delete
             </Button>
           )}
         </div>

@@ -16,7 +16,9 @@ export const treatmentRecordSchema = z.object({
   durationDays: z.coerce.number().min(1),
   status: z.enum(['Ongoing', 'Completed']),
   withdrawalPeriodDays: z.coerce.number().default(0).optional(),
-  notes: z.string().optional()
+  notes: z.string().optional(),
+  inventoryItemId: z.string().optional(),
+  inventoryQuantityUsed: z.coerce.number().optional()
 });
 
 export type TreatmentRecord = z.infer<typeof treatmentRecordSchema>;

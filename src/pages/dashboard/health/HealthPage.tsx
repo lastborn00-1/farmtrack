@@ -3,7 +3,7 @@ import { useHealth } from '@/features/health/hooks/useHealth';
 import { useBatches } from '@/features/farm/hooks/useBatches';
 import { VaccinationForm } from '@/features/health/components/VaccinationForm';
 import { TreatmentForm } from '@/features/health/components/TreatmentForm';
-import { Plus, Syringe, Stethoscope, HeartPulse, CheckCircle2, Clock, Pencil, AlertTriangle, Pill } from 'lucide-react';
+import { Plus, Syringe, Stethoscope, HeartPulse, CheckCircle2, Clock, Pencil, AlertTriangle, Pill, Trash } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { format } from 'date-fns';
 
@@ -14,7 +14,7 @@ interface HealthPageProps {
 }
 
 export default function HealthPage({ initialTab = 'vaccines' }: HealthPageProps) {
-  const { vaccines, treatments, isLoading, addVaccine, addTreatment, updateVaccine, updateTreatment, isSubmitting } = useHealth();
+  const { vaccines, treatments, isLoading, addVaccine, addTreatment, updateVaccine, updateTreatment, deleteTreatment, isSubmitting } = useHealth();
   const { batches, isLoading: batchesLoading } = useBatches();
   
   const [activeTab, setActiveTab] = useState<TabType>(initialTab);
@@ -71,6 +71,12 @@ export default function HealthPage({ initialTab = 'vaccines' }: HealthPageProps)
         status: 'Completed' as const
       } 
     }).catch(console.error);
+  };
+
+  const handleDeleteTreatment = (id: string) => {
+    if (window.confirm("Are you sure you want to delete this treatment?")) {
+      deleteTreatment(id).catch(console.error);
+    }
   };
 
   const pendingVaccines = vaccines.filter(v => v.status === 'Pending' && v.type !== 'Dewormer').sort((a, b) => new Date(a.scheduledDate).getTime() - new Date(b.scheduledDate).getTime());
@@ -374,12 +380,20 @@ export default function HealthPage({ initialTab = 'vaccines' }: HealthPageProps)
                           })()
                         )}
                         <div className="mt-4 flex items-center justify-between">
-                          <button
-                            onClick={() => setEditingTreatment(t)}
-                            className="text-[11px] font-bold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800/60 px-3 py-2 rounded-xl flex items-center gap-1.5 touch-active active:scale-95 transition-transform"
-                          >
-                            <Pencil className="w-4 h-4" /> Edit
-                          </button>
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => setEditingTreatment(t)}
+                              className="text-[11px] font-bold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800/60 px-3 py-2 rounded-xl flex items-center gap-1.5 touch-active active:scale-95 transition-transform"
+                            >
+                              <Pencil className="w-4 h-4" /> Edit
+                            </button>
+                            <button
+                              onClick={() => { if(t.id) handleDeleteTreatment(t.id) }}
+                              className="text-[11px] font-bold text-red-700 dark:text-red-400 bg-red-100 dark:bg-red-900/30 px-3 py-2 rounded-xl flex items-center gap-1.5 touch-active active:scale-95 transition-transform"
+                            >
+                              <Trash className="w-4 h-4" /> Delete
+                            </button>
+                          </div>
                           <button
                             onClick={() => markTreatmentComplete(t)}
                             className="text-[11px] font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-900/30 px-3 py-2 rounded-xl flex items-center gap-1.5 touch-active active:scale-95 transition-transform"
@@ -404,13 +418,22 @@ export default function HealthPage({ initialTab = 'vaccines' }: HealthPageProps)
                           <p className="text-sm font-bold text-foreground">{t.diagnosis}</p>
                           <p className="text-xs text-muted-foreground mt-0.5">{t.batchName} <span className="opacity-60">·</span> {t.date && !isNaN(new Date(t.date).getTime()) ? format(new Date(t.date), 'MMM yyyy') : 'Unknown'}</p>
                         </div>
-                        <button
-                          onClick={() => setEditingTreatment(t)}
-                          className="w-8 h-8 rounded-full bg-slate-50 dark:bg-slate-800 flex items-center justify-center flex-shrink-0"
-                          aria-label="Edit treatment"
-                        >
-                          <Pencil className="w-4 h-4 text-slate-500" />
-                        </button>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => setEditingTreatment(t)}
+                            className="w-8 h-8 rounded-full bg-slate-50 dark:bg-slate-800 flex items-center justify-center flex-shrink-0"
+                            aria-label="Edit treatment"
+                          >
+                            <Pencil className="w-4 h-4 text-slate-500" />
+                          </button>
+                          <button
+                            onClick={() => { if(t.id) handleDeleteTreatment(t.id) }}
+                            className="w-8 h-8 rounded-full bg-red-50 dark:bg-red-900/20 flex items-center justify-center flex-shrink-0"
+                            aria-label="Delete treatment"
+                          >
+                            <Trash className="w-4 h-4 text-red-500" />
+                          </button>
+                        </div>
                       </div>
                     ))}
                   </div>

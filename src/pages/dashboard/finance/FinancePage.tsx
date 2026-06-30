@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { format } from 'date-fns';
 
 export default function FinancePage() {
-  const { transactions, isLoading, addTransaction, updateTransaction, isSubmitting } = useFinance();
+  const { transactions, isLoading, addTransaction, updateTransaction, deleteTransaction, isSubmitting } = useFinance();
   const { batches, updateBatch } = useBatches();
   const { activeFarm } = useAuthStore();
   const [isAddOpen, setIsAddOpen] = useState(false);
@@ -54,6 +54,19 @@ export default function FinancePage() {
       setEditingTransaction(selectedTransaction);
       setIsAddOpen(true);
       setSelectedTransaction(null);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (selectedTransaction && window.confirm("Are you sure you want to delete this transaction? This action cannot be undone.")) {
+      try {
+        await deleteTransaction(selectedTransaction.id!);
+        toast.success("Transaction deleted successfully");
+        setSelectedTransaction(null);
+      } catch (error) {
+        toast.error("Failed to delete transaction");
+        console.error(error);
+      }
     }
   };
 
@@ -244,6 +257,7 @@ export default function FinancePage() {
         transaction={selectedTransaction}
         farmName={activeFarm?.name || 'My Farm'}
         onEdit={handleEdit}
+        onDelete={handleDelete}
       />
     </div>
   );
