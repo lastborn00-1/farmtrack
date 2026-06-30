@@ -1,0 +1,81 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isCurrentUser(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function isSuperAdmin() {
+      return isAuthenticated() && getUserData().role == 'SUPER_ADMIN';
+    }
+    
+    function isOwner(farmId) {
+      return isAuthenticated() && get(/databases/$(database)/documents/farms/$(farmId)).data.ownerUid == request.auth.uid;
+    }
+    
+    function getUserRole(farmId) {
+      let userData = getUserData();
+      return userData.farmId == farmId ? userData.role : 'NONE';
+    }
+
+    // Users Collection: Users can only read/write their own profile
+    match /users/{userId} {
+      allow read: if isCurrentUser(userId) || isSuperAdmin();
+      allow create: if isCurrentUser(userId);
+      allow update: if isCurrentUser(userId) || isSuperAdmin();
+      allow delete: if isSuperAdmin();
+    }
+
+    // Farms Collection
+    match /farms/{farmId} {
+      allow read: if isOwner(farmId) || getUserRole(farmId) != 'NONE' || isSuperAdmin();
+      allow create: if isAuthenticated() && request.auth.uid == request.resource.data.ownerUid;
+      allow update: if isOwner(farmId) || isSuperAdmin();
+      allow delete: if isSuperAdmin();
+
+      // Finance Transactions - strictly no attendant access
+      match /transactions/{docId} {
+        allow read: if isOwner(farmId) || getUserRole(farmId) in ['MANAGER', 'VETERINARIAN'] || isSuperAdmin();
+        allow create, update: if isOwner(farmId) || getUserRole(farmId) == 'MANAGER' || isSuperAdmin();
+        allow delete: if isOwner(farmId) || getUserRole(farmId) == 'MANAGER' || isSuperAdmin();
+      }
+      
+      // Health / Vaccines / Treatments
+      match /vaccines/{docId} {
+        allow read: if isOwner(farmId) || getUserRole(farmId) != 'NONE' || isSuperAdmin();
+        allow create, update: if isOwner(farmId) || getUserRole(farmId) in ['MANAGER', 'VETERINARIAN'] || isSuperAdmin();
+        allow delete: if isOwner(farmId) || getUserRole(farmId) == 'MANAGER' || isSuperAdmin();
+      }
+
+      match /vaccinations/{docId} {
+        allow read: if isOwner(farmId) || getUserRole(farmId) != 'NONE' || isSuperAdmin();
+        allow create, update: if isOwner(farmId) || getUserRole(farmId) in ['MANAGER', 'VETERINARIAN'] || isSuperAdmin();
+        allow delete: if isOwner(farmId) || getUserRole(farmId) == 'MANAGER' || isSuperAdmin();
+      }
+      
+      match /treatments/{docId} {
+        allow read: if isOwner(farmId) || getUserRole(farmId) != 'NONE' || isSuperAdmin();
+        allow create, update: if isOwner(farmId) || getUserRole(farmId) in ['MANAGER', 'VETERINARIAN'] || isSuperAdmin();
+        allow delete: if isOwner(farmId) || getUserRole(farmId) == 'MANAGER' || isSuperAdmin();
+      }
+
+      // Default for other collections (houses, batches, egg_production, inventory, daily_records)
+      match /{collection}/{docId} {
+        allow read: if isOwner(farmId) || getUserRole(farmId) != 'NONE' || isSuperAdmin();
+        allow create, update: if isOwner(farmId) || getUserRole(farmId) in ['MANAGER', 'ATTENDANT'] || isSuperAdmin();
+        allow delete: if isOwner(farmId) || getUserRole(farmId) == 'MANAGER' || isSuperAdmin();
+      }
+    }
+  }
+}
