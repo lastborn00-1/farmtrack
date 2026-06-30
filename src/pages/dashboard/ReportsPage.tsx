@@ -19,7 +19,18 @@ import {
 } from 'recharts';
 import { TrendingUp, Egg, DollarSign, Activity } from 'lucide-react';
 
-const COLORS = ['#22c55e', '#f59e0b', '#3b82f6', '#ef4444', '#8b5cf6'];
+const CATEGORY_COLORS: Record<string, string> = {
+  'Feed Cost':   '#f59e0b',
+  'Medication':  '#ef4444',
+  'Equipment':   '#3b82f6',
+  'Additive':    '#8b5cf6',
+  'Salary':      '#ec4899',
+  'Egg Sales':   '#22c55e',
+  'Bird Sales':  '#10b981',
+  'Manure Sales':'#6ee7b7',
+  'Other':       '#94a3b8',
+};
+const FALLBACK_COLORS = ['#f59e0b','#ef4444','#3b82f6','#8b5cf6','#ec4899','#22c55e','#10b981','#94a3b8'];
 
 export default function ReportsPage() {
   const { records: eggRecords } = useEggProduction();
@@ -224,38 +235,56 @@ export default function ReportsPage() {
       {pieData.length > 0 && (
         <div className="premium-card border border-border rounded-2xl p-4">
           <p className="text-sm font-bold text-foreground mb-4">📊 Expense Breakdown</p>
-          <div className="flex items-center gap-4">
-            <ResponsiveContainer width="50%" height={140}>
-              <PieChart>
-                <Pie data={pieData} cx="50%" cy="50%" innerRadius={40} outerRadius={65} dataKey="value" paddingAngle={3}>
-                  {pieData.map((_, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                  ))}
-                </Pie>
-                <Tooltip
-                formatter={(v) => [`₦${Number(v).toLocaleString()}`, '']}
-                  contentStyle={{
-                    background: 'hsl(var(--card))',
-                    border: '1px solid hsl(var(--border))',
-                    borderRadius: '12px',
-                    fontSize: '11px',
-                    fontWeight: 600,
-                  }}
-                />
-              </PieChart>
-            </ResponsiveContainer>
-            <div className="flex-1 space-y-2">
-              {pieData.map((d, i) => (
-                <div key={d.name} className="flex items-center gap-2">
-                  <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: COLORS[i % COLORS.length] }} />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-[10px] font-semibold text-foreground truncate">{d.name}</p>
-                    <p className="text-[10px] text-muted-foreground">₦{d.value.toLocaleString()}</p>
-                  </div>
-                </div>
-              ))}
+          {pieData.length > 0 ? (
+            <div className="flex items-center gap-4">
+              <ResponsiveContainer width="50%" height={160}>
+                <PieChart>
+                  <Pie data={pieData} cx="50%" cy="50%" innerRadius={44} outerRadius={70} dataKey="value" paddingAngle={3}>
+                    {pieData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={CATEGORY_COLORS[entry.name] || FALLBACK_COLORS[index % FALLBACK_COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip
+                    formatter={(v: any) => [`₦${Number(v).toLocaleString()}`, '']}
+                    contentStyle={{
+                      background: 'hsl(var(--card))',
+                      border: '1px solid hsl(var(--border))',
+                      borderRadius: '12px',
+                      fontSize: '11px',
+                      fontWeight: 600,
+                    }}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+              <div className="flex-1 space-y-2">
+                {pieData.map((d, i) => {
+                  const total = pieData.reduce((s, x) => s + x.value, 0);
+                  const pct = total > 0 ? Math.round((d.value / total) * 100) : 0;
+                  const color = CATEGORY_COLORS[d.name] || FALLBACK_COLORS[i % FALLBACK_COLORS.length];
+                  return (
+                    <div key={d.name} className="flex items-center gap-2">
+                      <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: color }} />
+                      <div className="flex-1 min-w-0">
+                        <div className="flex justify-between items-center">
+                          <p className="text-[10px] font-semibold text-foreground truncate">{d.name}</p>
+                          <p className="text-[10px] font-bold text-muted-foreground ml-1">{pct}%</p>
+                        </div>
+                        <p className="text-[10px] text-muted-foreground">₦{d.value.toLocaleString()}</p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
-          </div>
+          ) : (
+            <div className="h-40 flex items-center justify-center text-center">
+              <div>
+                <p className="text-3xl mb-2">📊</p>
+                <p className="text-sm font-semibold text-foreground">No expenses yet</p>
+                <p className="text-xs text-muted-foreground mt-1">Add cost when restocking inventory to see breakdown here.</p>
+              </div>
+            </div>
+          )}
         </div>
       )}
 

@@ -1,13 +1,25 @@
 import { useState } from 'react';
 import type { InventoryItem } from '@/schemas/inventorySchemas';
 import { useInventory } from '@/features/inventory/hooks/useInventory';
+import { useFinance } from '@/features/finance/hooks/useFinance';
 import { InventoryItemForm } from '@/features/inventory/components/InventoryItemForm';
 import { InventoryTransactionForm } from '@/features/inventory/components/InventoryTransactionForm';
 import { Plus, PackageSearch, PackageOpen, AlertTriangle, ArrowDownToLine, ArrowUpFromLine, Boxes } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { toast } from 'sonner';
+
+// Maps inventory category to the correct Finance expense category
+const CATEGORY_TO_FINANCE: Record<string, string> = {
+  'Feed': 'Feed Cost',
+  'Medication': 'Medication',
+  'Additive': 'Other',
+  'Equipment': 'Equipment',
+  'Other': 'Other',
+};
 
 export default function InventoryPage() {
   const { items, isLoading, addItem, updateItem, logTransaction, isSubmitting } = useInventory();
+  const { addTransaction } = useFinance();
   
   const [isAddItemOpen, setIsAddItemOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<InventoryItem | null>(null);
@@ -39,11 +51,34 @@ export default function InventoryPage() {
       if (newQuantity < 0) newQuantity = 0;
     }
 
+    // Strip totalCost from the inventory log payload (not part of the schema)
+    const { totalCost, ...logData } = data;
+    const cleanLog = Object.fromEntries(Object.entries(logData).filter(([_, v]) => v !== undefined && v !== '' && !Number.isNaN(v)));
+
     try {
-      await logTransaction({ log: data, newQuantity });
+      await logTransaction({ log: cleanLog as any, newQuantity });
+
+      // Auto-log Finance expense if cost was provided and it's a restock
+      if (data.type === 'IN' && totalCost && Number(totalCost) > 0) {
+        const financeCategory = CATEGORY_TO_FINANCE[selectedItem.category] || 'Other';
+        await addTransaction({
+          type: 'EXPENSE',
+          category: financeCategory as any,
+          amount: Number(totalCost),
+          date: data.date,
+          description: `Restock: ${data.quantity} ${selectedItem.unit} of ${selectedItem.name}`,
+          paymentMethod: 'Cash',
+          status: 'Paid',
+        });
+        toast.success(`Restocked & ₦${Number(totalCost).toLocaleString()} logged as ${financeCategory} expense!`);
+      } else {
+        toast.success(data.type === 'IN' ? 'Stock restocked!' : 'Usage logged!');
+      }
+
       setSelectedItem(null);
     } catch (e) {
       console.error(e);
+      toast.error('Failed to save. Please try again.');
     }
   };
 

@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 
 interface InventoryTransactionFormProps {
   item: InventoryItem;
-  onSubmit: (data: InventoryLog) => void;
+  onSubmit: (data: InventoryLog & { totalCost?: number }) => void;
   isLoading?: boolean;
 }
 
@@ -66,9 +66,29 @@ export function InventoryTransactionForm({ item, onSubmit, isLoading }: Inventor
         {errors.quantity && <p className="text-xs text-red-500">{String(errors.quantity.message)}</p>}
       </div>
 
+      {type === 'IN' && (
+        <div className="space-y-2 p-3 rounded-xl bg-emerald-50/60 dark:bg-emerald-900/10 border border-emerald-100 dark:border-emerald-900/30">
+          <Label htmlFor="totalCost" className="text-emerald-800 dark:text-emerald-300">
+            Total Cost (₦) <span className="text-muted-foreground font-normal text-xs">(Optional)</span>
+          </Label>
+          <Input
+            id="totalCost"
+            type="number"
+            step="0.01"
+            min="0"
+            placeholder="e.g. 45000"
+            {...register('totalCost', { valueAsNumber: true })}
+            className="border-emerald-200 dark:border-emerald-900/40 focus-visible:ring-emerald-500"
+          />
+          <p className="text-[10px] text-emerald-700 dark:text-emerald-400">
+            💡 If entered, this will automatically be recorded as a <strong>{item.category}</strong> expense in Finance &amp; Reports.
+          </p>
+        </div>
+      )}
+
       <div className="space-y-2">
         <Label htmlFor="notes">Notes (Optional)</Label>
-        <Input id="notes" placeholder="e.g. Invoice #1234 or Batch A" {...register('notes')} />
+        <Input id="notes" placeholder="e.g. Invoice #1234 or Supplier name" {...register('notes')} />
         {errors.notes && <p className="text-xs text-red-500">{String(errors.notes.message)}</p>}
       </div>
 

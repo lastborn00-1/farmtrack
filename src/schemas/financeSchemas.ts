@@ -7,6 +7,7 @@ export const transactionSchema = z.object({
     'Feed Cost',
     'Medication',
     'Equipment',
+    'Additive',
     'Salary',
     'Egg Sales',
     'Bird Sales',
