@@ -165,35 +165,36 @@ export function ReceiptViewer({ isOpen, onClose, transaction, farmName, onEdit, 
         </div>
 
         {/* Action Buttons (outside of capture area) */}
-        <div className="flex items-center gap-3 p-4 pt-0 mt-auto flex-shrink-0">
+        <div className="flex items-center gap-2 p-4 pt-0 mt-auto flex-shrink-0">
           <Button 
-            className="flex-1 shadow-lg bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl"
+            className="flex-1 shadow-lg bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl gap-2"
             onClick={handleDownload}
             disabled={isDownloading}
+            title="Save & Share Image"
           >
-            <Download className="w-4 h-4 mr-2" />
-            {isDownloading ? 'Generating...' : 'Save & Share Image'}
+            <Download className="w-5 h-5" />
+            <span className="hidden sm:inline">{isDownloading ? 'Generating...' : 'Save & Share Image'}</span>
           </Button>
 
           {onEdit && (
             <Button 
               variant="secondary"
-              className="shadow-lg rounded-xl flex-shrink-0 bg-white hover:bg-slate-100 text-slate-900"
+              className="w-11 h-11 shadow-lg rounded-xl flex-shrink-0 bg-white hover:bg-slate-100 text-slate-900 p-0 flex items-center justify-center"
               onClick={onEdit}
+              title="Edit"
             >
-              <Edit className="w-4 h-4 mr-2" />
-              Edit
+              <Edit className="w-5 h-5" />
             </Button>
           )}
 
           {onDelete && (
             <Button 
               variant="destructive"
-              className="shadow-lg rounded-xl flex-shrink-0"
+              className="w-11 h-11 shadow-lg rounded-xl flex-shrink-0 p-0 flex items-center justify-center"
               onClick={onDelete}
+              title="Delete"
             >
-              <Trash className="w-4 h-4 mr-2" />
-              Delete
+              <Trash className="w-5 h-5" />
             </Button>
           )}
         </div>

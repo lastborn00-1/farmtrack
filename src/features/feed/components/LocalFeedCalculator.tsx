@@ -40,19 +40,6 @@ const STANDARD_RECIPES = {
     { name: 'Lysine', quantityKg: 1, totalPrice: 0 },
     { name: 'Toxin Binder', quantityKg: 1, totalPrice: 0 },
   ],
-  'Layer Mash': [
-    { name: 'Maize', quantityKg: 500, totalPrice: 0 },
-    { name: 'Soybean Meal', quantityKg: 150, totalPrice: 0 },
-    { name: 'Groundnut Cake (GNC)', quantityKg: 80, totalPrice: 0 },
-    { name: 'Wheat Offal', quantityKg: 140, totalPrice: 0 },
-    { name: 'Bone Meal', quantityKg: 30, totalPrice: 0 },
-    { name: 'Limestone', quantityKg: 85, totalPrice: 0 },
-    { name: 'Premix', quantityKg: 2.5, totalPrice: 0 },
-    { name: 'Salt', quantityKg: 2.5, totalPrice: 0 },
-    { name: 'Methionine', quantityKg: 1.5, totalPrice: 0 },
-    { name: 'Lysine', quantityKg: 1, totalPrice: 0 },
-    { name: 'Toxin Binder', quantityKg: 1, totalPrice: 0 },
-  ],
   'Pre-Layer Mash': [
     { name: 'Maize', quantityKg: 480, totalPrice: 0 },
     { name: 'Soybean Meal', quantityKg: 120, totalPrice: 0 },
@@ -61,6 +48,19 @@ const STANDARD_RECIPES = {
     { name: 'Palm Kernel Cake (PKC)', quantityKg: 30, totalPrice: 0 },
     { name: 'Bone Meal', quantityKg: 30, totalPrice: 0 },
     { name: 'Limestone', quantityKg: 30, totalPrice: 0 },
+    { name: 'Premix', quantityKg: 2.5, totalPrice: 0 },
+    { name: 'Salt', quantityKg: 2.5, totalPrice: 0 },
+    { name: 'Methionine', quantityKg: 1.5, totalPrice: 0 },
+    { name: 'Lysine', quantityKg: 1, totalPrice: 0 },
+    { name: 'Toxin Binder', quantityKg: 1, totalPrice: 0 },
+  ],
+  'Layer Mash': [
+    { name: 'Maize', quantityKg: 500, totalPrice: 0 },
+    { name: 'Soybean Meal', quantityKg: 150, totalPrice: 0 },
+    { name: 'Groundnut Cake (GNC)', quantityKg: 80, totalPrice: 0 },
+    { name: 'Wheat Offal', quantityKg: 140, totalPrice: 0 },
+    { name: 'Bone Meal', quantityKg: 30, totalPrice: 0 },
+    { name: 'Limestone', quantityKg: 85, totalPrice: 0 },
     { name: 'Premix', quantityKg: 2.5, totalPrice: 0 },
     { name: 'Salt', quantityKg: 2.5, totalPrice: 0 },
     { name: 'Methionine', quantityKg: 1.5, totalPrice: 0 },
@@ -185,15 +185,15 @@ export function LocalFeedCalculator() {
       {/* Templates */}
       <div>
         <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-3">Load Standard Recipe (1 Ton)</p>
-        <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
-          {(Object.keys(STANDARD_RECIPES) as Array<keyof typeof STANDARD_RECIPES>).map(recipe => (
+        <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide hide-scrollbar">
+          {Object.keys(STANDARD_RECIPES).map(recipe => (
             <button
               key={recipe}
               type="button"
-              onClick={() => loadRecipe(recipe)}
-              className="whitespace-nowrap px-4 py-2 rounded-xl border border-primary/20 bg-primary/5 text-primary text-sm font-semibold hover:bg-primary hover:text-white transition-colors"
+              onClick={() => loadRecipe(recipe as keyof typeof STANDARD_RECIPES)}
+              className="whitespace-nowrap px-3 py-1.5 rounded-xl border border-primary/20 bg-primary/5 text-primary text-[11px] font-semibold hover:bg-primary hover:text-white transition-colors"
             >
-              {recipe}
+              {recipe.replace(' Mash', '')}
             </button>
           ))}
         </div>

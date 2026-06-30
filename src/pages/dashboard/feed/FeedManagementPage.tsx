@@ -172,36 +172,36 @@ export default function FeedManagementPage() {
       </div>
 
       {/* Tabs */}
-      <div className="flex bg-muted/50 p-1.5 rounded-2xl overflow-x-auto scrollbar-hide hide-scrollbar">
+      <div className="flex bg-muted/50 p-1.5 rounded-2xl overflow-x-auto scrollbar-hide hide-scrollbar gap-1">
         <button
           onClick={() => setActiveTab('inventory')}
-          className={`flex-1 min-w-max flex items-center justify-center gap-2 py-3 px-3 text-sm font-bold rounded-xl transition-all ${
+          className={`flex-1 min-w-max flex items-center justify-center gap-1.5 py-2.5 px-2 text-[11px] sm:text-sm font-bold rounded-xl transition-all ${
             activeTab === 'inventory' 
               ? 'bg-background shadow-md text-foreground border border-border scale-[0.98]' 
               : 'text-muted-foreground hover:text-foreground'
           }`}
         >
-          <Wheat className="w-4 h-4" /> Feed & Logs
+          <Wheat className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> Feed Logs
         </button>
         <button
           onClick={() => setActiveTab('fcr')}
-          className={`flex-1 min-w-max flex items-center justify-center gap-2 py-3 px-3 text-sm font-bold rounded-xl transition-all ${
+          className={`flex-1 min-w-max flex items-center justify-center gap-1.5 py-2.5 px-2 text-[11px] sm:text-sm font-bold rounded-xl transition-all ${
             activeTab === 'fcr' 
               ? 'bg-background shadow-md text-foreground border border-border scale-[0.98]' 
               : 'text-muted-foreground hover:text-foreground'
           }`}
         >
-          <Scale className="w-4 h-4" /> Performance (FCR)
+          <Scale className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> FCR
         </button>
         <button
           onClick={() => setActiveTab('production')}
-          className={`flex-1 min-w-max flex items-center justify-center gap-2 py-3 px-3 text-sm font-bold rounded-xl transition-all ${
+          className={`flex-1 min-w-max flex items-center justify-center gap-1.5 py-2.5 px-2 text-[11px] sm:text-sm font-bold rounded-xl transition-all ${
             activeTab === 'production' 
               ? 'bg-background shadow-md text-foreground border border-border scale-[0.98]' 
               : 'text-muted-foreground hover:text-foreground'
           }`}
         >
-          <Beaker className="w-4 h-4" /> Local Production
+          <Beaker className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> Local
         </button>
       </div>
 

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import type { TreatmentRecord } from '@/schemas/healthSchemas';
@@ -23,7 +23,7 @@ interface TreatmentFormProps {
 
 export function TreatmentForm({ batches, onSubmit, isLoading, initialData }: TreatmentFormProps) {
   const { items: inventoryItems } = useInventory();
-  const medications = inventoryItems.filter(i => i.category === 'Medication');
+  const medications = useMemo(() => inventoryItems.filter(i => i.category === 'Medication'), [inventoryItems]);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const { register, handleSubmit, watch, setValue, formState: { errors } } = useForm<any>({
     resolver: zodResolver(treatmentRecordSchema),
@@ -63,11 +63,12 @@ export function TreatmentForm({ batches, onSubmit, isLoading, initialData }: Tre
   useEffect(() => {
     if (selectedInventoryItemId) {
       const item = medications.find(m => m.id === selectedInventoryItemId);
-      if (item) {
+      if (item && watch('medicationUsed') !== item.name) {
         setValue('medicationUsed', item.name, { shouldValidate: true });
       }
     }
-  }, [selectedInventoryItemId, medications, setValue]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedInventoryItemId]);
 
   useEffect(() => {
     const batch = batches.find(b => b.id === selectedBatchId);
