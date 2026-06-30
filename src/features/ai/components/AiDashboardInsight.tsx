@@ -77,6 +77,8 @@ export function AiDashboardInsight({ metrics }: AiDashboardInsightProps) {
     metrics.todayMortality,
     metrics.upcomingVaccinesCount,
     metrics.lowStockCount,
+    metrics.todayEggs,
+    metrics.layingBirds,
   ].join('|');
 
   useEffect(() => {

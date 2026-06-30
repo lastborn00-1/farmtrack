@@ -31,7 +31,11 @@ export default function FinancePage() {
           const batch = batches.find(b => b.id === data.birdsSoldBatchId);
           if (batch) {
             const newQty = Math.max(0, batch.currentQuantity - Number(data.birdsSoldCount));
-            await updateBatch({ id: batch.id!, currentQuantity: newQty } as any);
+            await updateBatch({ 
+              id: batch.id!, 
+              currentQuantity: newQty,
+              ...(newQty === 0 && { status: 'SOLD' })
+            } as any);
             toast.success(`${data.birdsSoldCount} birds deducted from ${batch.batchName}`);
           }
         }

@@ -591,6 +591,7 @@ export default function BatchesPage() {
                       id: mortalityBatch.id!,
                       currentQuantity: newQty,
                       [field]: (mortalityBatch[field] || 0) + count,
+                      ...(newQty === 0 && { status: 'COMPLETED' })
                     } as any);
 
                     // 2. Add to Daily Records so it shows on Dashboard
