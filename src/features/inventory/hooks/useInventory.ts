@@ -156,15 +156,26 @@ export function useInventory() {
     },
   });
 
+  const deleteItemMutation = useMutation({
+    mutationFn: async (itemId: string) => {
+      if (!activeFarm?.farmId) throw new Error('No active farm');
+      await deleteFarmDocument(activeFarm.farmId, 'inventory', itemId);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['inventory', activeFarm?.farmId] });
+    },
+  });
+
   return {
     items: itemsQuery.data || [],
     logs: logsQuery.data || [],
     isLoading: itemsQuery.isLoading || logsQuery.isLoading,
     addItem: addItemMutation.mutateAsync,
     updateItem: updateItemMutation.mutateAsync,
+    deleteItem: deleteItemMutation.mutateAsync,
     logTransaction: logTransactionMutation.mutateAsync,
     updateLog: updateLogMutation.mutateAsync,
     deleteLog: deleteLogMutation.mutateAsync,
-    isSubmitting: addItemMutation.isPending || logTransactionMutation.isPending || updateItemMutation.isPending || deleteLogMutation.isPending || updateLogMutation.isPending,
+    isSubmitting: addItemMutation.isPending || logTransactionMutation.isPending || updateItemMutation.isPending || deleteItemMutation.isPending || deleteLogMutation.isPending || updateLogMutation.isPending,
   };
 }

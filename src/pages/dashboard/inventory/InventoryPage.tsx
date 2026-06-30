@@ -4,7 +4,7 @@ import { useInventory } from '@/features/inventory/hooks/useInventory';
 import { useFinance } from '@/features/finance/hooks/useFinance';
 import { InventoryItemForm } from '@/features/inventory/components/InventoryItemForm';
 import { InventoryTransactionForm } from '@/features/inventory/components/InventoryTransactionForm';
-import { Plus, PackageSearch, PackageOpen, AlertTriangle, ArrowDownToLine, ArrowUpFromLine, Boxes } from 'lucide-react';
+import { Plus, PackageSearch, PackageOpen, AlertTriangle, ArrowDownToLine, ArrowUpFromLine, Boxes, Trash2 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { toast } from 'sonner';
 
@@ -18,7 +18,7 @@ const CATEGORY_TO_FINANCE: Record<string, string> = {
 };
 
 export default function InventoryPage() {
-  const { items, isLoading, addItem, updateItem, logTransaction, isSubmitting } = useInventory();
+  const { items, isLoading, addItem, updateItem, deleteItem, logTransaction, isSubmitting } = useInventory();
   const { addTransaction } = useFinance();
   
   const [isAddItemOpen, setIsAddItemOpen] = useState(false);
@@ -58,6 +58,18 @@ export default function InventoryPage() {
     } catch (e) {
       console.error(e);
       toast.error('Failed to save. Please try again.');
+    }
+  };
+
+  const handleDeleteItem = async (itemId: string) => {
+    if (confirm('Are you sure you want to delete this item? This action cannot be undone.')) {
+      try {
+        await deleteItem(itemId);
+        toast.success('Item deleted successfully!');
+      } catch (e) {
+        console.error(e);
+        toast.error('Failed to delete item.');
+      }
     }
   };
 
@@ -190,6 +202,9 @@ export default function InventoryPage() {
                         <div className="flex items-center gap-2">
                           <button onClick={() => setEditingItem(item)} className="text-[10px] font-bold px-2 py-1 rounded-md bg-muted hover:bg-muted/80 text-foreground transition-colors">
                             Edit
+                          </button>
+                          <button onClick={() => handleDeleteItem(item.id!)} className="text-[10px] font-bold px-2 py-1 rounded-md bg-rose-100 text-rose-700 hover:bg-rose-200 dark:bg-rose-900/30 dark:text-rose-400 dark:hover:bg-rose-900/50 transition-colors">
+                            <Trash2 className="w-3 h-3" />
                           </button>
                           <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest bg-muted/60 dark:bg-muted/30 px-2.5 py-1 rounded-full">{item.category}</span>
                         </div>

@@ -6,15 +6,21 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 
+import { z } from 'zod';
+
 interface InventoryTransactionFormProps {
   item: InventoryItem;
   onSubmit: (data: InventoryLog & { totalCost?: number }) => void;
   isLoading?: boolean;
 }
 
+const formSchema = inventoryLogSchema.extend({
+  totalCost: z.coerce.number().optional()
+});
+
 export function InventoryTransactionForm({ item, onSubmit, isLoading }: InventoryTransactionFormProps) {
   const { register, handleSubmit, watch, formState: { errors } } = useForm<any>({
-    resolver: zodResolver(inventoryLogSchema),
+    resolver: zodResolver(formSchema),
     defaultValues: {
       itemId: item.id,
       itemName: item.name,
