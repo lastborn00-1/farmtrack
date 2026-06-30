@@ -73,7 +73,7 @@ export function DailyRecordForm({ batches, initialData, onSubmit, isLoading }: D
             className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm"
             {...register('batchId')}
           >
-            {batches.map(b => (
+            {batches.filter(b => ['BROODING', 'GROWING', 'LAYING'].includes(b.status)).map(b => (
               <option key={b.id} value={b.id}>{b.batchName} ({b.houseName})</option>
             ))}
           </select>

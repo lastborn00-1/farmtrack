@@ -80,7 +80,7 @@ export function EggProductionForm({ batches, initialData, onSubmit, isLoading }:
             className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm"
             {...register('batchId')}
           >
-            {batches.map(b => (
+            {batches.filter(b => b.status === 'LAYING').map(b => (
               <option key={b.id} value={b.id}>{b.batchName} ({b.houseName})</option>
             ))}
           </select>
