@@ -76,16 +76,18 @@ export default function FeedManagementPage() {
     const qty = Number(form.quantity);
     
     if (editingLogId) {
+      const logPayload: any = {
+        itemId: form.itemId,
+        itemName: form.itemName,
+        quantity: qty,
+        date: form.date,
+      };
+      if (form.batchId) logPayload.referenceId = form.batchId;
+      if (form.notes) logPayload.notes = form.notes;
+
       updateLog({
         logId: editingLogId,
-        log: {
-          itemId: form.itemId,
-          itemName: form.itemName,
-          quantity: qty,
-          date: form.date,
-          referenceId: form.batchId || undefined,
-          notes: form.notes || undefined,
-        },
+        log: logPayload,
         oldQuantity: editingOldQuantity,
         newQuantity: qty
       }).then(() => toast.success('Feed consumption updated!')).catch(e => {
@@ -93,16 +95,18 @@ export default function FeedManagementPage() {
       });
     } else {
       const newQty = Math.max(0, item.currentQuantity - qty);
+      const logPayload: any = {
+        itemId: form.itemId,
+        itemName: form.itemName,
+        type: 'OUT',
+        quantity: qty,
+        date: form.date,
+      };
+      if (form.batchId) logPayload.referenceId = form.batchId;
+      if (form.notes) logPayload.notes = form.notes;
+
       logTransaction({
-        log: {
-          itemId: form.itemId,
-          itemName: form.itemName,
-          type: 'OUT',
-          quantity: qty,
-          date: form.date,
-          referenceId: form.batchId || undefined,
-          notes: form.notes || undefined,
-        },
+        log: logPayload,
         newQuantity: newQty,
       }).then(() => toast.success('Feed consumption logged!')).catch(e => {
         toast.error('Failed to log. ' + e.message);

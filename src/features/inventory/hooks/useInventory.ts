@@ -76,8 +76,11 @@ export function useInventory() {
     }) => {
       if (!activeFarm?.farmId) throw new Error('No active farm');
       
+      // Strip undefined values before passing to Firestore
+      const cleanLog = Object.fromEntries(Object.entries(log).filter(([_, v]) => v !== undefined));
+
       // Add the log
-      await addFarmDocument(activeFarm.farmId, 'inventoryLogs', log);
+      await addFarmDocument(activeFarm.farmId, 'inventoryLogs', cleanLog as any);
       
       // Update the item quantity (strip undefined to avoid Firestore error)
       const updatePayload: Record<string, any> = { currentQuantity: newQuantity };
@@ -105,8 +108,11 @@ export function useInventory() {
       if (!activeFarm?.farmId) throw new Error('No active farm');
       if (!log.itemId) return;
 
+      // Strip undefined values before passing to Firestore
+      const cleanLog = Object.fromEntries(Object.entries(log).filter(([_, v]) => v !== undefined));
+
       // Update the log
-      await updateFarmDocument(activeFarm.farmId, 'inventoryLogs', logId, log);
+      await updateFarmDocument(activeFarm.farmId, 'inventoryLogs', logId, cleanLog);
       
       // Update the item quantity: restore old quantity, subtract new quantity
       const allItems = await getFarmDocuments<InventoryItem>(activeFarm.farmId, 'inventory');
