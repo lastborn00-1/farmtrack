@@ -12,7 +12,14 @@ export function useHouses() {
 
   const housesQuery = useQuery({
     queryKey,
-    queryFn: () => getFarmDocuments<House>(activeFarm!.farmId, 'houses'),
+    queryFn: async () => {
+      const data = await getFarmDocuments<House>(activeFarm!.farmId, 'houses');
+      return data.sort((a: any, b: any) => {
+        const aTime = a.createdAt?.seconds ?? 0;
+        const bTime = b.createdAt?.seconds ?? 0;
+        return aTime - bTime;
+      });
+    },
     enabled: !!activeFarm?.farmId,
   });
 

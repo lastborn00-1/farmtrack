@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { EggProductionForm } from '@/features/production/components/EggProductionForm';
 import { EggStoreForm } from '@/features/production/components/EggStoreForm';
 import { format } from 'date-fns';
+import { useMemo } from 'react';
 import { exportToCsv, exportTableToPdf } from '@/lib/exportUtils';
 import {
   DropdownMenu,
@@ -37,6 +38,16 @@ export default function EggProductionPage() {
       setIsAddOpen(false);
     }
   };
+
+  const recordsByMonth = useMemo(() => {
+    const grouped: Record<string, typeof records> = {};
+    records.forEach(r => {
+      const key = format(new Date(r.date), 'MMMM yyyy');
+      if (!grouped[key]) grouped[key] = [];
+      grouped[key].push(r);
+    });
+    return grouped;
+  }, [records]);
 
   const totalEggs = records.reduce((s, r) => s + (r.totalEggs || 0), 0);
   const totalCrates = records.reduce((s, r) => s + (r.totalCrates || 0), 0);
@@ -240,73 +251,85 @@ export default function EggProductionPage() {
             </button>
           </div>
         ) : (
-          <div className="space-y-3">
-            {records.map((record) => {
-              const defective = (record.crackedEggs || 0) + (record.brokenEggs || 0) + (record.dirtyEggs || 0) + (record.softShellEggs || 0);
-              const qualityPct = record.totalEggs > 0
-                ? Math.round(((record.totalEggs - defective) / record.totalEggs) * 100)
-                : 100;
-
-              return (
-                <div key={record.id} className="premium-card rounded-2xl border border-border p-4 touch-active active:scale-98 transition-transform duration-100">
-                  <div className="flex items-start gap-3">
-                    <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 shadow-sm shadow-amber-200 dark:shadow-amber-900/40"
-                         style={{ background: 'linear-gradient(135deg, hsl(38,92%,50%), hsl(34,100%,45%))' }}>
-                      <Egg className="w-6 h-6 text-white" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between mb-1">
-                        <p className="font-bold text-foreground text-base truncate">{record.batchName}</p>
-                        <div className="flex items-center gap-1.5">
-                          <div className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground bg-muted/50 px-2.5 py-1 rounded-full">
-                            <CalendarDays className="w-3.5 h-3.5" />
-                            {format(new Date(record.date), 'dd MMM')}
-                          </div>
-                          <button onClick={() => setEditingRecord(record)} className="text-[10px] font-bold px-2 py-1 rounded-md bg-muted hover:bg-muted/80 text-foreground transition-colors">
-                            Edit
-                          </button>
-                          <button
-                            onClick={() => setDeletingRecord(record)}
-                            className="w-7 h-7 rounded-md bg-red-50 dark:bg-red-900/20 text-red-500 hover:bg-red-100 dark:hover:bg-red-900/40 flex items-center justify-center transition-colors"
-                            aria-label="Delete record"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                      </div>
-                      
-                      <div className="mt-3 grid grid-cols-3 gap-2">
-                        <div className="bg-amber-50 dark:bg-amber-900/20 rounded-xl p-2.5 text-center border border-amber-100 dark:border-amber-900/30">
-                          <p className="text-[10px] text-amber-700/80 dark:text-amber-500 font-bold uppercase tracking-wider mb-0.5">Total</p>
-                          <p className="text-base font-extrabold text-amber-900 dark:text-amber-400">{record.totalEggs}</p>
-                        </div>
-                        <div className="bg-emerald-50 dark:bg-emerald-900/20 rounded-xl p-2.5 text-center border border-emerald-100 dark:border-emerald-900/30">
-                          <p className="text-[10px] text-emerald-700/80 dark:text-emerald-500 font-bold uppercase tracking-wider mb-0.5">Good</p>
-                          <p className="text-base font-extrabold text-emerald-900 dark:text-emerald-400">{record.normalEggs}</p>
-                        </div>
-                        <div className="bg-blue-50 dark:bg-blue-900/20 rounded-xl p-2.5 text-center border border-blue-100 dark:border-blue-900/30">
-                          <p className="text-[10px] text-blue-700/80 dark:text-blue-500 font-bold uppercase tracking-wider mb-0.5">Crates</p>
-                          <p className="text-base font-extrabold text-blue-900 dark:text-blue-400">{record.totalCrates}</p>
-                        </div>
-                      </div>
-
-                      <div className="mt-4 flex items-center gap-3">
-                        <div className="flex-1 h-2 bg-muted dark:bg-muted/50 rounded-full overflow-hidden p-0.5">
-                          <div
-                            className="h-full bg-gradient-to-r from-emerald-400 to-green-500 rounded-full shadow-[0_0_8px_rgba(16,185,129,0.4)]"
-                            style={{ width: `${qualityPct}%` }}
-                          />
-                        </div>
-                        <p className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold uppercase tracking-widest flex items-center gap-1 flex-shrink-0">
-                          <TrendingUp className="w-3.5 h-3.5" />
-                          {qualityPct}% quality
-                        </p>
-                      </div>
-                    </div>
-                  </div>
+          <div className="space-y-6">
+            {Object.entries(recordsByMonth).map(([month, monthRecords]) => (
+              <div key={month}>
+                {/* Month Header */}
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="h-px flex-1 bg-border/60" />
+                  <span className="text-[11px] font-extrabold text-muted-foreground uppercase tracking-widest px-2 py-1 bg-muted/50 rounded-full border border-border/50">{month}</span>
+                  <div className="h-px flex-1 bg-border/60" />
                 </div>
-              );
-            })}
+                <div className="space-y-3">
+                  {monthRecords.map((record) => {
+                    const defective = (record.crackedEggs || 0) + (record.brokenEggs || 0) + (record.dirtyEggs || 0) + (record.softShellEggs || 0);
+                    const qualityPct = record.totalEggs > 0
+                      ? Math.round(((record.totalEggs - defective) / record.totalEggs) * 100)
+                      : 100;
+
+                    return (
+                      <div key={record.id} className="premium-card rounded-2xl border border-border p-4 touch-active active:scale-98 transition-transform duration-100">
+                        <div className="flex items-start gap-3">
+                          <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 shadow-sm shadow-amber-200 dark:shadow-amber-900/40"
+                               style={{ background: 'linear-gradient(135deg, hsl(38,92%,50%), hsl(34,100%,45%))' }}>
+                            <Egg className="w-6 h-6 text-white" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between mb-1">
+                              <p className="font-bold text-foreground text-base truncate">{record.batchName}</p>
+                              <div className="flex items-center gap-1.5">
+                                <div className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground bg-muted/50 px-2.5 py-1 rounded-full">
+                                  <CalendarDays className="w-3.5 h-3.5" />
+                                  {format(new Date(record.date), 'dd MMM')}
+                                </div>
+                                <button onClick={() => setEditingRecord(record)} className="text-[10px] font-bold px-2 py-1 rounded-md bg-muted hover:bg-muted/80 text-foreground transition-colors">
+                                  Edit
+                                </button>
+                                <button
+                                  onClick={() => setDeletingRecord(record)}
+                                  className="w-7 h-7 rounded-md bg-red-50 dark:bg-red-900/20 text-red-500 hover:bg-red-100 dark:hover:bg-red-900/40 flex items-center justify-center transition-colors"
+                                  aria-label="Delete record"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                            </div>
+                            
+                            <div className="mt-3 grid grid-cols-3 gap-2">
+                              <div className="bg-amber-50 dark:bg-amber-900/20 rounded-xl p-2.5 text-center border border-amber-100 dark:border-amber-900/30">
+                                <p className="text-[10px] text-amber-700/80 dark:text-amber-500 font-bold uppercase tracking-wider mb-0.5">Total</p>
+                                <p className="text-base font-extrabold text-amber-900 dark:text-amber-400">{record.totalEggs}</p>
+                              </div>
+                              <div className="bg-emerald-50 dark:bg-emerald-900/20 rounded-xl p-2.5 text-center border border-emerald-100 dark:border-emerald-900/30">
+                                <p className="text-[10px] text-emerald-700/80 dark:text-emerald-500 font-bold uppercase tracking-wider mb-0.5">Good</p>
+                                <p className="text-base font-extrabold text-emerald-900 dark:text-emerald-400">{record.normalEggs}</p>
+                              </div>
+                              <div className="bg-blue-50 dark:bg-blue-900/20 rounded-xl p-2.5 text-center border border-blue-100 dark:border-blue-900/30">
+                                <p className="text-[10px] text-blue-700/80 dark:text-blue-500 font-bold uppercase tracking-wider mb-0.5">Crates</p>
+                                <p className="text-base font-extrabold text-blue-900 dark:text-blue-400">{record.totalCrates}</p>
+                              </div>
+                            </div>
+
+                            <div className="mt-4 flex items-center gap-3">
+                              <div className="flex-1 h-2 bg-muted dark:bg-muted/50 rounded-full overflow-hidden p-0.5">
+                                <div
+                                  className="h-full bg-gradient-to-r from-emerald-400 to-green-500 rounded-full shadow-[0_0_8px_rgba(16,185,129,0.4)]"
+                                  style={{ width: `${qualityPct}%` }}
+                                />
+                              </div>
+                              <p className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold uppercase tracking-widest flex items-center gap-1 flex-shrink-0">
+                                <TrendingUp className="w-3.5 h-3.5" />
+                                {qualityPct}% quality
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
           </div>
         )}
       </div>
