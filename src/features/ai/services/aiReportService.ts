@@ -3,6 +3,7 @@ import { collection, getDocs, addDoc, query, orderBy, limit } from 'firebase/fir
 import type { AiReport, AiReportType } from '../types';
 import { differenceInDays, subDays } from 'date-fns';
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import { calcCurrentAgeWeeks, getLifecycleStage } from '@/lib/birdAge';
 
 const apiKey = import.meta.env.VITE_GEMINI_API_KEY || '';
 const genAI = new GoogleGenerativeAI(apiKey);
@@ -94,7 +95,19 @@ export class AiReportService {
         getDocs(collection(db, 'farms', farmId, 'vaccinations')),
       ]);
 
-      const batches = batchesSnap.docs.map(d => d.data());
+      const rawBatches = batchesSnap.docs.map(d => d.data());
+      const batches = rawBatches.map(b => {
+        if (b.status === 'BROODING' || b.status === 'GROWING' || b.status === 'LAYING') {
+          const age = calcCurrentAgeWeeks(b.arrivalDate, b.currentAgeWeeks);
+          const stage = getLifecycleStage(age.totalWeeks);
+          let newStatus = b.status;
+          if (stage === 'Brooding') newStatus = 'BROODING';
+          else if (stage === 'Growing' || stage === 'Pre-Lay') newStatus = 'GROWING';
+          else if (stage === 'Laying' || stage === 'Late Lay' || stage === 'End of Lay') newStatus = 'LAYING';
+          return { ...b, status: newStatus };
+        }
+        return b;
+      });
       
       // Filter records based on report type (e.g. last 30 days for monthly)
       const daysToLookBack = type === 'MONTHLY' ? 30 : type === 'BIWEEKLY' ? 14 : 7;

@@ -1,6 +1,7 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { db } from '@/firebase/config';
 import { collection, getDocsFromServer } from 'firebase/firestore';
+import { calcCurrentAgeWeeks, getLifecycleStage } from '@/lib/birdAge';
 
 const apiKey = import.meta.env.VITE_GEMINI_API_KEY || '';
 const genAI = new GoogleGenerativeAI(apiKey);
@@ -74,7 +75,19 @@ export class AiService {
       ]);
 
       const houses = housesSnap.docs.map(d => ({ id: d.id, ...d.data() })) as any[];
-      const batches = batchesSnap.docs.map(d => ({ id: d.id, ...d.data() })) as any[];
+      const rawBatches = batchesSnap.docs.map(d => ({ id: d.id, ...d.data() })) as any[];
+      const batches = rawBatches.map(b => {
+        if (b.status === 'BROODING' || b.status === 'GROWING' || b.status === 'LAYING') {
+          const age = calcCurrentAgeWeeks(b.arrivalDate, b.currentAgeWeeks);
+          const stage = getLifecycleStage(age.totalWeeks);
+          let newStatus = b.status;
+          if (stage === 'Brooding') newStatus = 'BROODING';
+          else if (stage === 'Growing' || stage === 'Pre-Lay') newStatus = 'GROWING';
+          else if (stage === 'Laying' || stage === 'Late Lay' || stage === 'End of Lay') newStatus = 'LAYING';
+          return { ...b, status: newStatus };
+        }
+        return b;
+      });
       const eggRecords = eggsSnap.docs.map(d => d.data()) as any[];
       const feedLogs = feedSnap.docs.map(d => d.data()) as any[];
       const dailyRecords = dailyRecordsSnap.docs.map(d => d.data()) as any[];
