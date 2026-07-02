@@ -9,6 +9,7 @@ interface Message {
   role: 'user' | 'assistant';
   content: string;
   imageUrl?: string; // base64 preview
+  model?: string; // model used to generate response
 }
 
 function CopyButton({ text }: { text: string }) {
@@ -111,19 +112,32 @@ export default function AiAssistantPage() {
 
     try {
       let response: string;
+      let responseModel: string | undefined;
 
       if (currentImage) {
         // Use multimodal image analysis
         const result = await AiService.analyzeDiseaseImage(currentImage.base64, currentImage.mimeType);
         response = `🔬 **AI Disease Analysis**\n\n**Likely Diagnosis:** ${result.diagnosis}\n\n**Recommended Medication:** ${result.medication}\n\n**Suggested Dosage:** ${result.dosage}\n\n---\n_Always consult with a licensed veterinarian to confirm the diagnosis before treatment._`;
+        responseModel = 'gemini-3.5-flash (Vision)';
       } else {
-        response = await AiService.askAssistant(userContent, activeFarm.farmId);
+        // Send history excluding the hardcoded welcome message
+        const chatHistory = activeMessages
+          .filter(m => m.id !== 'welcome')
+          .map(m => ({
+            role: m.role === 'user' ? 'user' : 'model',
+            parts: [{ text: m.content }]
+          }));
+          
+        const result = await AiService.askAssistant(userContent, activeFarm.farmId, chatHistory);
+        response = result.text;
+        responseModel = result.model;
       }
 
       const assistantMsg: Message = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
         content: response,
+        model: responseModel,
       };
       
       setSessionMessages(prev => [...prev, assistantMsg]);
@@ -223,7 +237,14 @@ export default function AiAssistantPage() {
                   </div>
                 </div>
                 {msg.role === 'assistant' && msg.id !== 'welcome' && (
-                  <CopyButton text={msg.content} />
+                  <div className="flex items-center gap-2">
+                    <CopyButton text={msg.content} />
+                    {msg.model && (
+                      <span className="text-[9px] text-muted-foreground mt-1.5 px-1.5 py-0.5 bg-muted rounded border border-border/50">
+                        {msg.model}
+                      </span>
+                    )}
+                  </div>
                 )}
               </div>
             </div>

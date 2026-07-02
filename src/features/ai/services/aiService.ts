@@ -15,15 +15,23 @@ const FALLBACK_MODEL = 'gemini-3.1-flash-lite';
  */
 async function generateWithFallback(
   prompt: string | any[],
-  generationConfig?: object
-): Promise<string> {
-  const attemptGenerate = async (modelName: string): Promise<string> => {
+  generationConfig?: object,
+  history?: any[]
+): Promise<{ text: string, model: string }> {
+  const attemptGenerate = async (modelName: string): Promise<{ text: string, model: string }> => {
     const model = genAI.getGenerativeModel({
       model: modelName,
       ...(generationConfig ? { generationConfig } : {}),
     });
-    const result = await model.generateContent(prompt as any);
-    return result.response.text();
+
+    if (history && history.length > 0) {
+      const chat = model.startChat({ history });
+      const result = await chat.sendMessage(prompt as string);
+      return { text: result.response.text(), model: modelName };
+    } else {
+      const result = await model.generateContent(prompt as any);
+      return { text: result.response.text(), model: modelName };
+    }
   };
 
   try {
@@ -46,9 +54,9 @@ async function generateWithFallback(
 
 export class AiService {
   /**
-   * Fetches comprehensive farm data and sends it as context to Gemini 2.5 Flash.
+   * Fetches comprehensive farm data and sends it as context to Gemini.
    */
-  static async askAssistant(prompt: string, farmId: string): Promise<string> {
+  static async askAssistant(prompt: string, farmId: string, history?: any[]): Promise<{ text: string, model: string }> {
     if (!apiKey) {
       throw new Error("Gemini API key is missing. Please configure it in the .env file.");
     }
@@ -131,7 +139,7 @@ ${feedLogs.slice(-5).map((f: any) => `  - ${f.date}: ${f.quantity || 0} ${f.unit
 "${prompt}"
 `;
 
-      const responseText = await generateWithFallback(context);
+      const responseText = await generateWithFallback(context, undefined, history);
       return responseText;
 
     } catch (error: any) {
@@ -166,7 +174,7 @@ Today's Metrics:
 `;
 
       const responseText = await generateWithFallback(context);
-      return responseText.trim();
+      return responseText.text.trim();
 
     } catch (error) {
       console.error("AI Insight Error:", error);
@@ -198,14 +206,14 @@ Respond ONLY with a valid JSON object in this exact format:
 Do not include markdown backticks or any other text.
       `;
 
-      const text = await generateWithFallback(
+      const result = await generateWithFallback(
         [
           imagePrompt,
           { inlineData: { data: base64Data, mimeType } }
         ],
         { responseMimeType: 'application/json' }
       );
-      const cleanText = text.replace(/```json/g, '').replace(/```/g, '').trim();
+      const cleanText = result.text.replace(/```json/g, '').replace(/```/g, '').trim();
       const jsonStart = cleanText.indexOf('{');
       const jsonEnd = cleanText.lastIndexOf('}');
       return JSON.parse(jsonStart >= 0 && jsonEnd >= 0 ? cleanText.slice(jsonStart, jsonEnd + 1) : cleanText);
