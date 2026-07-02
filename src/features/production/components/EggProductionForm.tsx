@@ -47,9 +47,13 @@ export function EggProductionForm({ batches, initialData, onSubmit, isLoading }:
   const double = watch('doubleYolkEggs') || 0;
 
   useEffect(() => {
-    const batch = batches.find(b => b.id === selectedBatchId);
-    if (batch) {
-      setValue('batchName', batch.batchName);
+    if (selectedBatchId === 'ALL') {
+      setValue('batchName', 'All Batches (Mixed)');
+    } else {
+      const batch = batches.find(b => b.id === selectedBatchId);
+      if (batch) {
+        setValue('batchName', batch.batchName);
+      }
     }
   }, [selectedBatchId, batches, setValue]);
 
@@ -80,6 +84,7 @@ export function EggProductionForm({ batches, initialData, onSubmit, isLoading }:
             className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm"
             {...register('batchId')}
           >
+            <option value="ALL">All Batches (Mixed)</option>
             {batches.filter(b => b.status === 'LAYING').map(b => (
               <option key={b.id} value={b.id}>{b.batchName} ({b.houseName})</option>
             ))}

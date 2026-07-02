@@ -94,8 +94,17 @@ export class AiReportService {
       const revenue = transactions.filter(t => t.type === 'INCOME').reduce((s, t) => s + t.amount, 0);
       const expenses = transactions.filter(t => t.type === 'EXPENSE').reduce((s, t) => s + t.amount, 0);
 
-      // 2. Build the AI Prompt
-      const context = `
+    const activeBatchesText = batches.map(b => {
+      let age = b.currentAgeWeeks || 0;
+      if (b.arrivalDate) {
+        const weeksSinceArrival = Math.floor(differenceInDays(now, new Date(b.arrivalDate)) / 7);
+        age += Math.max(0, weeksSinceArrival);
+      }
+      return `- ${b.batchName}: ${b.currentQuantity} birds, ${age} weeks old, ${b.breedName}`;
+    }).join('\n');
+
+    // 2. Build the AI Prompt
+    const context = `
 You are PoultryPro AI, an expert farm management advisor.
 Generate a ${type} intelligence report for a commercial poultry farm.
 Use Markdown formatting. Use emojis sparingly but effectively.
@@ -114,7 +123,7 @@ Farm Data (Last ${daysToLookBack} days):
 - Expenses: ₦${expenses}
 
 Active Batches:
-${batches.map(b => `- ${b.batchName}: ${b.currentQuantity} birds, ${b.currentAgeWeeks} weeks old, ${b.breedName}`).join('\n')}
+${activeBatchesText}
 
 Upcoming Vaccinations (Next 14 Days or Overdue):
 ${pendingVaccines.length > 0 ? pendingVaccines.map(v => `- ${v.vaccineName} for batch ${v.batchName} (Scheduled: ${v.scheduledDate.split('T')[0]}, Method: ${v.administrationMethod})`).join('\n') : 'None scheduled.'}

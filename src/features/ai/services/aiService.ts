@@ -64,7 +64,14 @@ ${houses.map((h: any) => {
 }).join('\n') || '  None recorded.'}
 
 Batches (${batches.length} total):
-${batches.map((b: any) => `  - ${b.batchName} [${b.batchCode}]: Breed=${b.breedName || 'Unknown'}, House=${b.houseName || 'Unknown'}, Current Birds=${b.currentQuantity || 0}, Age=${b.currentAgeWeeks || 0} weeks, Status=${b.status}, Cumulative Mortality=${b.cumulativeMortality || 0}`).join('\n') || '  None recorded.'}
+${batches.map((b: any) => {
+  let age = b.currentAgeWeeks || 0;
+  if (b.arrivalDate) {
+    const weeksSinceArrival = Math.floor((now.getTime() - new Date(b.arrivalDate).getTime()) / (1000 * 3600 * 24 * 7));
+    age += Math.max(0, weeksSinceArrival);
+  }
+  return `  - ${b.batchName} [${b.batchCode}]: Breed=${b.breedName || 'Unknown'}, House=${b.houseName || 'Unknown'}, Current Birds=${b.currentQuantity || 0}, Age=${age} weeks, Status=${b.status}, Cumulative Mortality=${b.cumulativeMortality || 0}`;
+}).join('\n') || '  None recorded.'}
 
 Total Birds on Farm: ${totalBirds}
 Laying Birds on Farm: ${layingBirds} (Use this for expected egg calculations, NOT total birds)
