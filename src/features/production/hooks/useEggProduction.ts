@@ -12,7 +12,10 @@ export function useEggProduction() {
 
   const query = useQuery({
     queryKey,
-    queryFn: () => getFarmDocuments<EggProduction>(activeFarm!.farmId, 'eggProductions'),
+    queryFn: async () => {
+      const data = await getFarmDocuments<EggProduction>(activeFarm!.farmId, 'eggProductions');
+      return data.sort((a, b) => (b.date > a.date ? 1 : -1));
+    },
     enabled: !!activeFarm?.farmId,
   });
 

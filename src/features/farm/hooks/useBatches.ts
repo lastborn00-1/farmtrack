@@ -15,7 +15,9 @@ export function useBatches() {
     queryKey,
     queryFn: async () => {
       const data = await getFarmDocuments<Batch>(activeFarm!.farmId, 'batches');
-      return data.map(b => {
+      return data
+        .sort((a, b) => (a.arrivalDate > b.arrivalDate ? 1 : -1))
+        .map(b => {
         if (b.status === 'BROODING' || b.status === 'GROWING' || b.status === 'LAYING') {
           const age = calcCurrentAgeWeeks(b.arrivalDate, b.currentAgeWeeks);
           const stage = getLifecycleStage(age.totalWeeks);
