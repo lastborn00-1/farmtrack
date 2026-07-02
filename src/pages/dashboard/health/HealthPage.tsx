@@ -83,6 +83,19 @@ export default function HealthPage({ initialTab = 'vaccines' }: HealthPageProps)
   const pendingDeworming = vaccines.filter(v => v.status === 'Pending' && v.type === 'Dewormer').sort((a, b) => new Date(a.scheduledDate).getTime() - new Date(b.scheduledDate).getTime());
   const ongoingTreatments = treatments.filter(t => t.status === 'Ongoing');
 
+  // Group by Batch
+  const vaccinesByBatch = pendingVaccines.reduce((acc, v) => {
+    if (!acc[v.batchId]) acc[v.batchId] = { batchName: v.batchName, items: [] };
+    acc[v.batchId].items.push(v);
+    return acc;
+  }, {} as Record<string, { batchName: string, items: any[] }>);
+
+  const dewormingByBatch = pendingDeworming.reduce((acc, v) => {
+    if (!acc[v.batchId]) acc[v.batchId] = { batchName: v.batchName, items: [] };
+    acc[v.batchId].items.push(v);
+    return acc;
+  }, {} as Record<string, { batchName: string, items: any[] }>);
+
   return (
     <div className="flex flex-col gap-5 pb-28 animate-fade-in-up">
       {/* Summary */}
@@ -164,38 +177,43 @@ export default function HealthPage({ initialTab = 'vaccines' }: HealthPageProps)
             </div>
           ) : (
             <div className="space-y-4">
-              <div className="space-y-3">
-                {pendingVaccines.map(v => (
-                  <div key={v.id} className="premium-card rounded-2xl border border-border p-4 touch-active active:scale-98 transition-transform duration-100">
-                    <div className="flex items-start gap-4">
-                      <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center flex-shrink-0 shadow-sm shadow-amber-200 dark:shadow-amber-900/40">
-                        <Clock className="w-6 h-6 text-white" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="font-bold text-foreground text-base truncate">{v.vaccineName}</p>
-                        <p className="text-xs font-medium text-muted-foreground mt-0.5 truncate">{v.batchName} <span className="opacity-60">·</span> Age: {v.targetAgeWeeks} wks</p>
-                        
-                        <div className="mt-4 flex items-center justify-between">
-                          <span className="text-[10px] font-bold text-amber-800 dark:text-amber-400 bg-amber-100 dark:bg-amber-900/30 px-3 py-1.5 rounded-full uppercase tracking-wider">
-                            Due: {v.scheduledDate && !isNaN(new Date(v.scheduledDate).getTime()) ? format(new Date(v.scheduledDate), 'dd MMM yyyy') : 'Unknown'}
-                          </span>
-                          <div className="flex items-center gap-2">
-                            <button
-                              onClick={() => setEditingVaccine(v)}
-                              className="text-[11px] font-bold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800/60 px-3 py-2 rounded-xl flex items-center gap-1.5 touch-active active:scale-95 transition-transform"
-                            >
-                              <Pencil className="w-4 h-4" /> Edit
-                            </button>
-                            <button 
-                              onClick={() => markVaccineComplete(v)}
-                              className="text-[11px] font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-900/30 px-3 py-2 rounded-xl flex items-center gap-1.5 touch-active active:scale-95 transition-transform"
-                            >
-                              <CheckCircle2 className="w-4 h-4" /> Done
-                            </button>
+              <div className="space-y-6">
+                {Object.values(vaccinesByBatch).map(group => (
+                  <div key={group.batchName} className="space-y-3">
+                    <h3 className="text-sm font-bold text-slate-800 dark:text-slate-200 pl-3 border-l-4 border-amber-500 py-1 bg-amber-50/50 dark:bg-amber-900/10 rounded-r-lg">{group.batchName}</h3>
+                    {group.items.map(v => (
+                      <div key={v.id} className="premium-card rounded-2xl border border-border p-4 touch-active active:scale-98 transition-transform duration-100">
+                        <div className="flex items-start gap-4">
+                          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center flex-shrink-0 shadow-sm shadow-amber-200 dark:shadow-amber-900/40">
+                            <Clock className="w-6 h-6 text-white" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="font-bold text-foreground text-base truncate">{v.vaccineName}</p>
+                            <p className="text-xs font-medium text-muted-foreground mt-0.5 truncate">Age: {v.targetAgeWeeks} wks</p>
+                            
+                            <div className="mt-4 flex items-center justify-between">
+                              <span className="text-[10px] font-bold text-amber-800 dark:text-amber-400 bg-amber-100 dark:bg-amber-900/30 px-3 py-1.5 rounded-full uppercase tracking-wider">
+                                Due: {v.scheduledDate && !isNaN(new Date(v.scheduledDate).getTime()) ? format(new Date(v.scheduledDate), 'dd MMM yyyy') : 'Unknown'}
+                              </span>
+                              <div className="flex items-center gap-2">
+                                <button
+                                  onClick={() => setEditingVaccine(v)}
+                                  className="text-[11px] font-bold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800/60 px-3 py-2 rounded-xl flex items-center gap-1.5 touch-active active:scale-95 transition-transform"
+                                >
+                                  <Pencil className="w-4 h-4" /> Edit
+                                </button>
+                                <button 
+                                  onClick={() => markVaccineComplete(v)}
+                                  className="text-[11px] font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-900/30 px-3 py-2 rounded-xl flex items-center gap-1.5 touch-active active:scale-95 transition-transform"
+                                >
+                                  <CheckCircle2 className="w-4 h-4" /> Done
+                                </button>
+                              </div>
+                            </div>
                           </div>
                         </div>
                       </div>
-                    </div>
+                    ))}
                   </div>
                 ))}
               </div>
@@ -246,38 +264,43 @@ export default function HealthPage({ initialTab = 'vaccines' }: HealthPageProps)
             </div>
           ) : (
             <div className="space-y-4">
-              <div className="space-y-3">
-                {pendingDeworming.map(v => (
-                  <div key={v.id} className="premium-card rounded-2xl border border-border p-4 touch-active active:scale-98 transition-transform duration-100">
-                    <div className="flex items-start gap-4">
-                      <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-cyan-400 to-blue-500 flex items-center justify-center flex-shrink-0 shadow-sm shadow-cyan-200 dark:shadow-cyan-900/40">
-                        <Clock className="w-6 h-6 text-white" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="font-bold text-foreground text-base truncate">{v.vaccineName}</p>
-                        <p className="text-xs font-medium text-muted-foreground mt-0.5 truncate">{v.batchName} <span className="opacity-60">·</span> Age: {v.targetAgeWeeks} wks</p>
-                        
-                        <div className="mt-4 flex items-center justify-between">
-                          <span className="text-[10px] font-bold text-cyan-800 dark:text-cyan-400 bg-cyan-100 dark:bg-cyan-900/30 px-3 py-1.5 rounded-full uppercase tracking-wider">
-                            Due: {v.scheduledDate && !isNaN(new Date(v.scheduledDate).getTime()) ? format(new Date(v.scheduledDate), 'dd MMM yyyy') : 'Unknown'}
-                          </span>
-                          <div className="flex items-center gap-2">
-                            <button
-                              onClick={() => setEditingVaccine(v)}
-                              className="text-[11px] font-bold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800/60 px-3 py-2 rounded-xl flex items-center gap-1.5 touch-active active:scale-95 transition-transform"
-                            >
-                              <Pencil className="w-4 h-4" /> Edit
-                            </button>
-                            <button 
-                              onClick={() => markVaccineComplete(v)}
-                              className="text-[11px] font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-900/30 px-3 py-2 rounded-xl flex items-center gap-1.5 touch-active active:scale-95 transition-transform"
-                            >
-                              <CheckCircle2 className="w-4 h-4" /> Done
-                            </button>
+              <div className="space-y-6">
+                {Object.values(dewormingByBatch).map(group => (
+                  <div key={group.batchName} className="space-y-3">
+                    <h3 className="text-sm font-bold text-slate-800 dark:text-slate-200 pl-3 border-l-4 border-cyan-500 py-1 bg-cyan-50/50 dark:bg-cyan-900/10 rounded-r-lg">{group.batchName}</h3>
+                    {group.items.map(v => (
+                      <div key={v.id} className="premium-card rounded-2xl border border-border p-4 touch-active active:scale-98 transition-transform duration-100">
+                        <div className="flex items-start gap-4">
+                          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-cyan-400 to-blue-500 flex items-center justify-center flex-shrink-0 shadow-sm shadow-cyan-200 dark:shadow-cyan-900/40">
+                            <Clock className="w-6 h-6 text-white" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="font-bold text-foreground text-base truncate">{v.vaccineName}</p>
+                            <p className="text-xs font-medium text-muted-foreground mt-0.5 truncate">Age: {v.targetAgeWeeks} wks</p>
+                            
+                            <div className="mt-4 flex items-center justify-between">
+                              <span className="text-[10px] font-bold text-cyan-800 dark:text-cyan-400 bg-cyan-100 dark:bg-cyan-900/30 px-3 py-1.5 rounded-full uppercase tracking-wider">
+                                Due: {v.scheduledDate && !isNaN(new Date(v.scheduledDate).getTime()) ? format(new Date(v.scheduledDate), 'dd MMM yyyy') : 'Unknown'}
+                              </span>
+                              <div className="flex items-center gap-2">
+                                <button
+                                  onClick={() => setEditingVaccine(v)}
+                                  className="text-[11px] font-bold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800/60 px-3 py-2 rounded-xl flex items-center gap-1.5 touch-active active:scale-95 transition-transform"
+                                >
+                                  <Pencil className="w-4 h-4" /> Edit
+                                </button>
+                                <button 
+                                  onClick={() => markVaccineComplete(v)}
+                                  className="text-[11px] font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-900/30 px-3 py-2 rounded-xl flex items-center gap-1.5 touch-active active:scale-95 transition-transform"
+                                >
+                                  <CheckCircle2 className="w-4 h-4" /> Done
+                                </button>
+                              </div>
+                            </div>
                           </div>
                         </div>
                       </div>
-                    </div>
+                    ))}
                   </div>
                 ))}
               </div>
