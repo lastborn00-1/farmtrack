@@ -7,6 +7,37 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 const apiKey = import.meta.env.VITE_GEMINI_API_KEY || '';
 const genAI = new GoogleGenerativeAI(apiKey);
 
+const PRIMARY_MODEL = 'gemini-3.5-flash';
+const FALLBACK_MODEL = 'gemini-3.1-flash-lite';
+
+/**
+ * Attempts to generate content with the primary model (gemini-3.5-flash).
+ * Falls back to gemini-3.1-flash-lite on 429 rate-limit errors.
+ */
+async function generateWithFallback(prompt: string): Promise<string> {
+  const attemptGenerate = async (modelName: string): Promise<string> => {
+    const model = genAI.getGenerativeModel({ model: modelName });
+    const result = await model.generateContent(prompt);
+    return result.response.text();
+  };
+
+  try {
+    return await attemptGenerate(PRIMARY_MODEL);
+  } catch (err: any) {
+    const isRateLimit =
+      err?.status === 429 ||
+      err?.message?.includes('429') ||
+      err?.message?.toLowerCase().includes('resource_exhausted') ||
+      err?.message?.toLowerCase().includes('quota');
+
+    if (isRateLimit) {
+      console.warn(`[AI Report] ${PRIMARY_MODEL} rate limited. Falling back to ${FALLBACK_MODEL}.`);
+      return await attemptGenerate(FALLBACK_MODEL);
+    }
+    throw err;
+  }
+}
+
 export class AiReportService {
   /**
    * Checks if a new report should be generated based on the last generated report.
@@ -136,9 +167,7 @@ Instructions:
 5. Do not include raw JSON or code blocks. Speak directly to the farmer in a professional, encouraging tone.
 `;
 
-      const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
-      const result = await model.generateContent(context);
-      const reportContent = await result.response.text();
+      const reportContent = await generateWithFallback(context);
 
       // 3. Save to Firestore
       const report: AiReport = {

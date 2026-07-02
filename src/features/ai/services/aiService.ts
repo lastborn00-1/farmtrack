@@ -5,6 +5,45 @@ import { collection, getDocsFromServer } from 'firebase/firestore';
 const apiKey = import.meta.env.VITE_GEMINI_API_KEY || '';
 const genAI = new GoogleGenerativeAI(apiKey);
 
+const PRIMARY_MODEL = 'gemini-3.5-flash';
+const FALLBACK_MODEL = 'gemini-3.1-flash-lite';
+
+/**
+ * Attempts to generate content with the primary model (gemini-3.5-flash).
+ * If a 429 rate-limit error is returned, automatically retries with the
+ * fallback model (gemini-3.1-flash-lite). All other errors are re-thrown.
+ */
+async function generateWithFallback(
+  prompt: string | any[],
+  generationConfig?: object
+): Promise<string> {
+  const attemptGenerate = async (modelName: string): Promise<string> => {
+    const model = genAI.getGenerativeModel({
+      model: modelName,
+      ...(generationConfig ? { generationConfig } : {}),
+    });
+    const result = await model.generateContent(prompt as any);
+    return result.response.text();
+  };
+
+  try {
+    return await attemptGenerate(PRIMARY_MODEL);
+  } catch (err: any) {
+    // 429 = RESOURCE_EXHAUSTED (rate limit hit) — try fallback
+    const isRateLimit =
+      err?.status === 429 ||
+      err?.message?.includes('429') ||
+      err?.message?.toLowerCase().includes('resource_exhausted') ||
+      err?.message?.toLowerCase().includes('quota');
+
+    if (isRateLimit) {
+      console.warn(`[AI] ${PRIMARY_MODEL} rate limited. Falling back to ${FALLBACK_MODEL}.`);
+      return await attemptGenerate(FALLBACK_MODEL);
+    }
+    throw err;
+  }
+}
+
 export class AiService {
   /**
    * Fetches comprehensive farm data and sends it as context to Gemini 2.5 Flash.
@@ -92,10 +131,8 @@ ${feedLogs.slice(-5).map((f: any) => `  - ${f.date}: ${f.quantity || 0} ${f.unit
 "${prompt}"
 `;
 
-      const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
-      const result = await model.generateContent(context);
-      const response = await result.response;
-      return response.text();
+      const responseText = await generateWithFallback(context);
+      return responseText;
 
     } catch (error: any) {
       console.error("AI Assistant Error:", error);
@@ -128,10 +165,8 @@ Today's Metrics:
 - Upcoming Vaccinations (within 3 days): ${metrics.upcomingVaccinesCount}
 `;
 
-      const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
-      const result = await model.generateContent(context);
-      const response = await result.response;
-      return response.text().trim();
+      const responseText = await generateWithFallback(context);
+      return responseText.trim();
 
     } catch (error) {
       console.error("AI Insight Error:", error);
@@ -148,11 +183,7 @@ Today's Metrics:
     }
 
     try {
-      const model = genAI.getGenerativeModel({
-        model: "gemini-2.5-flash",
-        generationConfig: { responseMimeType: "application/json" },
-      });
-      const prompt = `
+      const imagePrompt = `
 You are PoultryPro AI, an avian health assistant for poultry farmers in Nigeria.
 Inspect the visible signs in this poultry image and provide a cautious, practical farm-health assessment.
 Do not refuse just because diagnosis cannot be confirmed from an image. If signs are unclear, state the most likely possibilities and what to check next.
@@ -167,17 +198,13 @@ Respond ONLY with a valid JSON object in this exact format:
 Do not include markdown backticks or any other text.
       `;
 
-      const result = await model.generateContent([
-        prompt,
-        {
-          inlineData: {
-            data: base64Data,
-            mimeType
-          }
-        }
-      ]);
-
-      const text = await result.response.text();
+      const text = await generateWithFallback(
+        [
+          imagePrompt,
+          { inlineData: { data: base64Data, mimeType } }
+        ],
+        { responseMimeType: 'application/json' }
+      );
       const cleanText = text.replace(/```json/g, '').replace(/```/g, '').trim();
       const jsonStart = cleanText.indexOf('{');
       const jsonEnd = cleanText.lastIndexOf('}');
